@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票交易计算器 - 仓位与止盈计算工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #121829;
+            --bg-card: rgba(30, 41, 59, 0.5);
+            --border-color: rgba(148, 163, 184, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-20px, 20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            font-weight: 400;
+        }
+
+        .calculators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 768px) {
+            .calculators-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .calculator-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: var(--shadow-xl);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .calculator-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .calculator-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 24px 38px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.3);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 16px 14px 40px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input[type="number"]:hover {
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .error-message {
+            color: var(--accent-danger);
+            font-size: 0.875rem;
+            margin-top: 8px;
+            display: none;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .result-section {
+            margin-top: 32px;
+            padding: 24px;
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .result-section.has-result {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            opacity: 0;
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .result-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-value.highlight {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.5rem;
+        }
+
+        .price-visualization {
+            margin-top: 24px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .price-visualization.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .price-bar {
+            position: relative;
+            height: 8px;
+            background: linear-gradient(90deg, 
+                var(--accent-danger) 0%, 
+                var(--accent-danger) 33%,
+                var(--text-secondary) 33%,
+                var(--text-secondary) 66%,
+                var(--accent-success) 66%,
+                var(--accent-success) 100%
+            );
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .price-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+
+        .price-marker {
+            text-align: center;
+        }
+
+        .price-marker-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .price-marker-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .price-marker:nth-child(1) .price-marker-value {
+            color: var(--accent-danger);
+        }
+
+        .price-marker:nth-child(2) .price-marker-value {
+            color: var(--accent-primary);
+        }
+
+        .price-marker:nth-child(3) .price-marker-value {
+            color: var(--accent-success);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Remove spinner from number inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>股票交易计算器</h1>
+            <p class="subtitle">专业的仓位管理与止盈止损计算工具</p>
+        </header>
+
+        <div class="calculators-grid">
+            <!-- Calculator 1: Position Size -->
+            <div class="calculator-card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <h2>仓位计算器</h2>
+                </div>
+
+                <form id="positionForm">
+                    <div class="form-group">
+                        <label for="buyPrice1">买入价格</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">¥</span>
+                            <input type="number" id="buyPrice1" step="0.01" min="0" required>
+                        </div>
+                        <div class="error-message" id="error1"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stopLoss1">止损价格</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">¥</span>
+                            <input type="number" id="stopLoss1" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="riskAmount">最大风险金额</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">¥</span>
+                            <input type="number" id="riskAmount" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="result-section" id="result1">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💰</div>
+                        <p>请输入数据以计算仓位</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculator 2: Profit Target -->
+            <div class="calculator-card">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <h2>止盈计算器</h2>
+                </div>
+
+                <form id="profitForm">
+                    <div class="form-group">
+                        <label for="buyPrice2">买入价格</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">¥</span>
+                            <input type="number" id="buyPrice2" step="0.01" min="0" required>
+                        </div>
+                        <div class="error-message" id="error2"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stopLoss2">止损价格</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">¥</span>
+                            <input type="number" id="stopLoss2" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="result-section" id="result2">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📈</div>
+                        <p>请输入数据以计算止盈价</p>
+                    </div>
+                </div>
+
+                <div class="price-visualization" id="priceViz">
+                    <div class="price-bar"></div>
+                    <div class="price-markers">
+                        <div class="price-marker">
+                            <div class="price-marker-label">止损</div>
+                            <div class="price-marker-value" id="vizStopLoss">-</div>
+                        </div>
+                        <div class="price-marker">
+                            <div class="price-marker-label">买入</div>
+                            <div class="price-marker-value" id="vizEntry">-</div>
+                        </div>
+                        <div class="price-marker">
+                            <div class="price-marker-label">止盈</div>
+                            <div class="price-marker-value" id="vizTarget">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 股票交易计算器 · 助力更明智的交易决策</p>
+        </footer>
+    </div>
+
+    <script>
+        // Utility function: Format number with thousand separators
+        function formatNumber(num, decimals = 2) {
+            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Calculator 1: Position Size Calculator
+        const buyPrice1 = document.getElementById('buyPrice1');
+        const stopLoss1 = document.getElementById('stopLoss1');
+        const riskAmount = document.getElementById('riskAmount');
+        const result1 = document.getElementById('result1');
+        const error1 = document.getElementById('error1');
+
+        function calculatePosition() {
+            const buy = parseFloat(buyPrice1.value);
+            const stop = parseFloat(stopLoss1.value);
+            const risk = parseFloat(riskAmount.value);
+
+            // Clear previous error
+            error1.classList.remove('show');
+
+            // Validate inputs
+            if (!buy || !stop || !risk) {
+                result1.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💰</div>
+                        <p>请输入数据以计算仓位</p>
+                    </div>
+                `;
+                result1.classList.remove('has-result');
+                return;
+            }
+
+            // Validation: buy price must be greater than stop loss
+            if (buy <= stop) {
+                error1.textContent = '错误：买入价格必须高于止损价格';
+                error1.classList.add('show');
+                result1.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>请修正输入数据</p>
+                    </div>
+                `;
+                result1.classList.remove('has-result');
+                return;
+            }
+
+            // Calculate
+            const riskPerShare = buy - stop;
+            const shares = Math.floor(risk / riskPerShare);
+            const totalInvestment = shares * buy;
+            const actualRisk = shares * riskPerShare;
+
+            // Display results
+            result1.classList.add('has-result');
+            result1.innerHTML = `
+                <div class="result-item" style="animation-delay: 0s">
+                    <span class="result-label">每股风险</span>
+                    <span class="result-value">¥${formatNumber(riskPerShare)}</span>
+                </div>
+                <div class="result-item" style="animation-delay: 0.1s">
+                    <span class="result-label">应购买股数</span>
+                    <span class="result-value highlight">${formatNumber(shares, 0)}</span>
+                </div>
+                <div class="result-item" style="animation-delay: 0.2s">
+                    <span class="result-label">总投资金额</span>
+                    <span class="result-value">¥${formatNumber(totalInvestment)}</span>
+                </div>
+                <div class="result-item" style="animation-delay: 0.3s">
+                    <span class="result-label">实际风险</span>
+                    <span class="result-value">¥${formatNumber(actualRisk)}</span>
+                </div>
+            `;
+        }
+
+        // Add event listeners for Calculator 1
+        buyPrice1.addEventListener('input', calculatePosition);
+        stopLoss1.addEventListener('input', calculatePosition);
+        riskAmount.addEventListener('input', calculatePosition);
+
+        // Calculator 2: Profit Target Calculator
+        const buyPrice2 = document.getElementById('buyPrice2');
+        const stopLoss2 = document.getElementById('stopLoss2');
+        const result2 = document.getElementById('result2');
+        const error2 = document.getElementById('error2');
+        const priceViz = document.getElementById('priceViz');
+        const vizStopLoss = document.getElementById('vizStopLoss');
+        const vizEntry = document.getElementById('vizEntry');
+        const vizTarget = document.getElementById('vizTarget');
+
+        function calculateProfitTarget() {
+            const buy = parseFloat(buyPrice2.value);
+            const stop = parseFloat(stopLoss2.value);
+
+            // Clear previous error
+            error2.classList.remove('show');
+
+            // Validate inputs
+            if (!buy || !stop) {
+                result2.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📈</div>
+                        <p>请输入数据以计算止盈价</p>
+                    </div>
+                `;
+                result2.classList.remove('has-result');
+                priceViz.classList.remove('show');
+                return;
+            }
+
+            // Validation: buy price must be greater than stop loss
+            if (buy <= stop) {
+                error2.textContent = '错误：买入价格必须高于止损价格';
+                error2.classList.add('show');
+                result2.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>请修正输入数据</p>
+                    </div>
+                `;
+                result2.classList.remove('has-result');
+                priceViz.classList.remove('show');
+                return;
+            }
+
+            // Calculate
+            const risk = buy - stop;
+            const profitTarget = buy + risk;
+            const riskRewardRatio = 1; // Always 1:1 based on requirement
+
+            // Display results
+            result2.classList.add('has-result');
+            result2.innerHTML = `
+                <div class="result-item" style="animation-delay: 0s">
+                    <span class="result-label">每股风险</span>
+                    <span class="result-value">¥${formatNumber(risk)}</span>
+                </div>
+                <div class="result-item" style="animation-delay: 0.1s">
+                    <span class="result-label">止盈目标价</span>
+                    <span class="result-value highlight">¥${formatNumber(profitTarget)}</span>
+                </div>
+                <div class="result-item" style="animation-delay: 0.2s">
+                    <span class="result-label">风险回报比</span>
+                    <span class="result-value">1:${riskRewardRatio}</span>
+                </div>
+            `;
+
+            // Update visualization
+            vizStopLoss.textContent = `¥${formatNumber(stop)}`;
+            vizEntry.textContent = `¥${formatNumber(buy)}`;
+            vizTarget.textContent = `¥${formatNumber(profitTarget)}`;
+            priceViz.classList.add('show');
+        }
+
+        // Add event listeners for Calculator 2
+        buyPrice2.addEventListener('input', calculateProfitTarget);
+        stopLoss2.addEventListener('input', calculateProfitTarget);
+    </script>
+</body>
+</html>
