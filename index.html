@@ -401,6 +401,88 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+
+        /* Dropdown styles */
+        select {
+            width: 100%;
+            padding: 14px 40px 14px 40px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+        select:hover {
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 10px;
+        }
+
+        .info-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: var(--accent-primary);
+            margin-top: 8px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 6px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+
+        .mode-button {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mode-button.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--text-primary);
+            box-shadow: 0 4px 8px -2px rgba(59, 130, 246, 0.3);
+        }
+
+        .mode-button:hover:not(.active) {
+            background: rgba(148, 163, 184, 0.05);
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -418,20 +500,69 @@
                     <h2>仓位计算器</h2>
                 </div>
 
+                <!-- Mode Selector -->
+                <div class="mode-selector">
+                    <button class="mode-button active" onclick="switchMode('stock', this)">股票模式</button>
+                    <button class="mode-button" onclick="switchMode('futures', this)">期货模式</button>
+                </div>
+
                 <form id="positionForm">
-                    <div class="form-group">
-                        <label for="buyPrice1">买入价格</label>
+                    <!-- Futures Product Selector -->
+                    <div class="form-group" id="futuresProductGroup" style="display: none;">
+                        <label for="futuresProduct">期货品种</label>
                         <div class="input-wrapper">
-                            <span class="input-prefix">¥</span>
+                            <span class="input-prefix">📦</span>
+                            <select id="futuresProduct">
+                                <option value="">请选择期货品种</option>
+                                <optgroup label="贵金属">
+                                    <option value="AU">黄金(AU) - 1000克/手</option>
+                                    <option value="AG">白银(AG) - 15千克/手</option>
+                                </optgroup>
+                                <optgroup label="黑色系">
+                                    <option value="RB">螺纹钢(RB) - 10吨/手</option>
+                                    <option value="HC">热轧卷板(HC) - 10吨/手</option>
+                                    <option value="I">铁矿石(I) - 100吨/手</option>
+                                    <option value="J">焦炭(J) - 100吨/手</option>
+                                    <option value="JM">焦煤(JM) - 60吨/手</option>
+                                </optgroup>
+                                <optgroup label="有色金属">
+                                    <option value="CU">铜(CU) - 5吨/手</option>
+                                    <option value="AL">铝(AL) - 5吨/手</option>
+                                    <option value="ZN">锌(ZN) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="化工">
+                                    <option value="TA">PTA(TA) - 5吨/手</option>
+                                    <option value="MA">甲醇(MA) - 10吨/手</option>
+                                    <option value="PP">聚丙烯(PP) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="能源">
+                                    <option value="SC">原油(SC) - 1000桶/手</option>
+                                    <option value="FU">燃料油(FU) - 10吨/手</option>
+                                </optgroup>
+                                <optgroup label="农产品">
+                                    <option value="M">豆粕(M) - 10吨/手</option>
+                                    <option value="Y">豆油(Y) - 10吨/手</option>
+                                    <option value="P">棕榈油(P) - 10吨/手</option>
+                                    <option value="C">玉米(C) - 10吨/手</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="info-badge" id="futuresInfo" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="buyPrice1"><span id="buyLabel1">买入价格</span></label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix" id="pricePrefix1">¥</span>
                             <input type="number" id="buyPrice1" step="0.01" min="0" required>
                         </div>
                         <div class="error-message" id="error1"></div>
                     </div>
 
                     <div class="form-group">
-                        <label for="stopLoss1">止损价格</label>
+                        <label for="stopLoss1"><span id="stopLabel1">止损价格</span></label>
                         <div class="input-wrapper">
-                            <span class="input-prefix">¥</span>
+                            <span class="input-prefix" id="stopPrefix1">¥</span>
                             <input type="number" id="stopLoss1" step="0.01" min="0" required>
                         </div>
                     </div>
@@ -512,6 +643,76 @@
     </div>
 
     <script>
+        // Futures products data
+        const futuresData = {
+            'AU': { name: '黄金', pointValue: 1000, tickSize: 0.05, unit: '元/克', multiplier: 1000 },
+            'AG': { name: '白银', pointValue: 15, tickSize: 1, unit: '元/千克', multiplier: 15 },
+            'RB': { name: '螺纹钢', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'HC': { name: '热轧卷板', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'I': { name: '铁矿石', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
+            'J': { name: '焦炭', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
+            'JM': { name: '焦煤', pointValue: 60, tickSize: 0.5, unit: '元/吨', multiplier: 60 },
+            'CU': { name: '铜', pointValue: 5, tickSize: 10, unit: '元/吨', multiplier: 5 },
+            'AL': { name: '铝', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
+            'ZN': { name: '锌', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
+            'TA': { name: 'PTA', pointValue: 5, tickSize: 2, unit: '元/吨', multiplier: 5 },
+            'MA': { name: '甲醇', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'PP': { name: '聚丙烯', pointValue: 5, tickSize: 1, unit: '元/吨', multiplier: 5 },
+            'SC': { name: '原油', pointValue: 1000, tickSize: 0.1, unit: '元/桶', multiplier: 1000 },
+            'FU': { name: '燃料油', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'M': { name: '豆粕', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'Y': { name: '豆油', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
+            'P': { name: '棕榈油', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
+            'C': { name: '玉米', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 }
+        };
+
+        let currentMode = 'stock';
+        let selectedFuturesProduct = null;
+
+        // Mode switcher
+        function switchMode(mode, button) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            const futuresGroup = document.getElementById('futuresProductGroup');
+            const buyLabel1 = document.getElementById('buyLabel1');
+            const stopLabel1 = document.getElementById('stopLabel1');
+            
+            if (mode === 'futures') {
+                futuresGroup.style.display = 'block';
+                buyLabel1.textContent = '开仓价格';
+                stopLabel1.textContent = '止损价格';
+            } else {
+                futuresGroup.style.display = 'none';
+                buyLabel1.textContent = '买入价格';
+                stopLabel1.textContent = '止损价格';
+                selectedFuturesProduct = null;
+                document.getElementById('futuresInfo').style.display = 'none';
+            }
+            calculatePosition();
+        }
+
+        // Initialize futures selector
+        document.addEventListener('DOMContentLoaded', function() {
+            const futuresSelector = document.getElementById('futuresProduct');
+            futuresSelector.addEventListener('change', function() {
+                const productCode = this.value;
+                const infoEl = document.getElementById('futuresInfo');
+                
+                if (productCode && futuresData[productCode]) {
+                    selectedFuturesProduct = futuresData[productCode];
+                    const tickValue = selectedFuturesProduct.tickSize * selectedFuturesProduct.multiplier;
+                    infoEl.textContent = `每跳${selectedFuturesProduct.tickSize}${selectedFuturesProduct.unit}，盈亏变动 ¥${tickValue}`;
+                    infoEl.style.display = 'inline-block';
+                } else {
+                    selectedFuturesProduct = null;
+                    infoEl.style.display = 'none';
+                }
+                calculatePosition();
+            });
+        });
+
         // Utility function: Format number with thousand separators
         function formatNumber(num, decimals = 2) {
             return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -546,7 +747,7 @@
 
             // Validation: buy price must be greater than stop loss
             if (buy <= stop) {
-                error1.textContent = '错误：买入价格必须高于止损价格';
+                error1.textContent = '错误：开仓价格必须高于止损价格';
                 error1.classList.add('show');
                 result1.innerHTML = `
                     <div class="empty-state">
@@ -558,32 +759,63 @@
                 return;
             }
 
-            // Calculate
-            const riskPerShare = buy - stop;
-            const shares = Math.floor(risk / riskPerShare);
-            const totalInvestment = shares * buy;
-            const actualRisk = shares * riskPerShare;
+            // Calculate based on mode
+            if (currentMode === 'futures' && selectedFuturesProduct) {
+                // Futures calculation
+                const priceDiff = buy - stop;
+                const riskPerPoint = priceDiff / selectedFuturesProduct.tickSize;
+                const valuePerTick = selectedFuturesProduct.tickSize * selectedFuturesProduct.multiplier;
+                const riskPerContract = riskPerPoint * valuePerTick;
+                const contracts = Math.floor(risk / riskPerContract);
+                const totalMargin = contracts * buy * selectedFuturesProduct.multiplier * 0.1; // Assume 10% margin
+                const actualRisk = contracts * riskPerContract;
 
-            // Display results
-            result1.classList.add('has-result');
-            result1.innerHTML = `
-                <div class="result-item" style="animation-delay: 0s">
-                    <span class="result-label">每股风险</span>
-                    <span class="result-value">¥${formatNumber(riskPerShare)}</span>
-                </div>
-                <div class="result-item" style="animation-delay: 0.1s">
-                    <span class="result-label">应购买股数</span>
-                    <span class="result-value highlight">${formatNumber(shares, 0)}</span>
-                </div>
-                <div class="result-item" style="animation-delay: 0.2s">
-                    <span class="result-label">总投资金额</span>
-                    <span class="result-value">¥${formatNumber(totalInvestment)}</span>
-                </div>
-                <div class="result-item" style="animation-delay: 0.3s">
-                    <span class="result-label">实际风险</span>
-                    <span class="result-value">¥${formatNumber(actualRisk)}</span>
-                </div>
-            `;
+                result1.classList.add('has-result');
+                result1.innerHTML = `
+                    <div class="result-item" style="animation-delay: 0s">
+                        <span class="result-label">每手风险</span>
+                        <span class="result-value">¥${formatNumber(riskPerContract)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.1s">
+                        <span class="result-label">建议开仓手数</span>
+                        <span class="result-value highlight">${formatNumber(contracts, 0)} 手</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.2s">
+                        <span class="result-label">预估保证金</span>
+                        <span class="result-value">¥${formatNumber(totalMargin)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.3s">
+                        <span class="result-label">实际风险</span>
+                        <span class="result-value">¥${formatNumber(actualRisk)}</span>
+                    </div>
+                `;
+            } else {
+                // Stock calculation
+                const riskPerShare = buy - stop;
+                const shares = Math.floor(risk / riskPerShare);
+                const totalInvestment = shares * buy;
+                const actualRisk = shares * riskPerShare;
+
+                result1.classList.add('has-result');
+                result1.innerHTML = `
+                    <div class="result-item" style="animation-delay: 0s">
+                        <span class="result-label">每股风险</span>
+                        <span class="result-value">¥${formatNumber(riskPerShare)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.1s">
+                        <span class="result-label">应购买股数</span>
+                        <span class="result-value highlight">${formatNumber(shares, 0)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.2s">
+                        <span class="result-label">总投资金额</span>
+                        <span class="result-value">¥${formatNumber(totalInvestment)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.3s">
+                        <span class="result-label">实际风险</span>
+                        <span class="result-value">¥${formatNumber(actualRisk)}</span>
+                    </div>
+                `;
+            }
         }
 
         // Add event listeners for Calculator 1
