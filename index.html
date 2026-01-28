@@ -898,6 +898,174 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
         }
+
+        /* Modal Dialog */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-dialog {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .modal-input-group {
+            margin-bottom: 16px;
+        }
+
+        .modal-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .modal-btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .modal-btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast-success {
+            border-left: 4px solid #22c55e;
+        }
+
+        .toast-error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -1073,6 +1241,16 @@
                     <p>暂无持仓记录</p>
                     <p style="font-size: 0.875rem; margin-top: 8px;">完成计算后点击"保存为持仓"按钮添加</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal Dialog -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal-dialog">
+                <div class="modal-header" id="modalTitle">标题</div>
+                <div class="modal-subtitle" id="modalSubtitle"></div>
+                <div class="modal-body" id="modalBody"></div>
+                <div class="modal-actions" id="modalActions"></div>
             </div>
         </div>
 
@@ -1679,20 +1857,102 @@
             return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
+        // ===== Modal Dialog Utilities =====
+        function showModal(title, subtitle, bodyHTML, actions) {
+            const overlay = document.getElementById('modalOverlay');
+            const titleEl = document.getElementById('modalTitle');
+            const subtitleEl = document.getElementById('modalSubtitle');
+            const bodyEl = document.getElementById('modalBody');
+            const actionsEl = document.getElementById('modalActions');
+
+            titleEl.textContent = title;
+            subtitleEl.textContent = subtitle;
+            bodyEl.innerHTML = bodyHTML;
+            actionsEl.innerHTML = actions.map(action => `
+                <button class="modal-btn ${action.primary ? 'modal-btn-primary' : 'modal-btn-secondary'}" 
+                        onclick="${action.onclick}">
+                    ${action.label}
+                </button>
+            `).join('');
+
+            overlay.classList.add('show');
+        }
+
+        function hideModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${type === 'success' ? '✅' : '❌'}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Close modal when clicking overlay
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideModal();
+            }
+        });
+
         // ===== Save Calculation as Position =====
         function saveCalculationAsPosition(calculatorNum) {
             const calc = calculatorNum === 1 ? lastCalculation1 : lastCalculation2;
             if (!calc) {
-                alert('没有可保存的计算结果');
+                showToast('没有可保存的计算结果', 'error');
                 return;
             }
 
-            const quantity = prompt(`请输入${calc.mode === 'stock' ? '股数' : '手数'}：`);
-            if (quantity === null) return;
+            const unit = calc.mode === 'stock' ? '股' : '手';
+            const productName = calc.mode === 'stock' ? '股票' : (futuresData[calc.futuresProduct]?.name || calc.futuresProduct);
 
-            const qty = parseInt(quantity);
+            showModal(
+                '💾 保存为持仓',
+                `${productName} · 买入价 ¥${formatNumber(calc.inputs.buyPrice)}`,
+                `
+                    <div class="modal-input-group">
+                        <label class="modal-label">数量 (${unit})</label>
+                        <input type="number" id="positionQuantity" class="modal-input" 
+                               placeholder="请输入${unit}数" min="1" step="1" autofocus>
+                    </div>
+                `,
+                [
+                    {
+                        label: '取消',
+                        primary: false,
+                        onclick: 'hideModal()'
+                    },
+                    {
+                        label: '保存',
+                        primary: true,
+                        onclick: `confirmSavePosition(${calculatorNum})`
+                    }
+                ]
+            );
+
+            // Focus input after modal shows
+            setTimeout(() => {
+                document.getElementById('positionQuantity')?.focus();
+            }, 100);
+        }
+
+        function confirmSavePosition(calculatorNum) {
+            const calc = calculatorNum === 1 ? lastCalculation1 : lastCalculation2;
+            const quantityInput = document.getElementById('positionQuantity');
+            const qty = parseInt(quantityInput.value);
+
             if (isNaN(qty) || qty <= 0) {
-                alert('请输入有效的数量');
+                quantityInput.style.borderColor = '#ef4444';
+                showToast('请输入有效的数量', 'error');
                 return;
             }
 
@@ -1713,7 +1973,156 @@
                 notes: ''
             };
 
-            savePosition(position);
+            try {
+                const positions = getPositions();
+                positions.unshift(position);
+                localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+                renderPositionsList();
+                hideModal();
+                showToast('持仓已保存！', 'success');
+            } catch (e) {
+                console.error('Failed to save position:', e);
+                showToast('保存失败，请重试', 'error');
+            }
+        }
+
+        // Update closePosition to use modal
+        function closePosition(id) {
+            const positions = getPositions();
+            const position = positions.find(p => p.id === id);
+            if (!position) return;
+
+            showModal(
+                '📊 平仓',
+                `${position.productName} · 买入价 ¥${formatNumber(position.buyPrice)}`,
+                `
+                    <div class="modal-input-group">
+                        <label class="modal-label">平仓价格</label>
+                        <input type="number" id="closePrice" class="modal-input" 
+                               placeholder="请输入平仓价格" step="0.01" autofocus>
+                    </div>
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 8px;">
+                        止损价: ¥${formatNumber(position.stopLoss)} · 
+                        目标价: ¥${formatNumber(position.targetPrice)}
+                    </div>
+                `,
+                [
+                    {
+                        label: '取消',
+                        primary: false,
+                        onclick: 'hideModal()'
+                    },
+                    {
+                        label: '确认平仓',
+                        primary: true,
+                        onclick: `confirmClosePosition(${id})`
+                    }
+                ]
+            );
+
+            setTimeout(() => {
+                document.getElementById('closePrice')?.focus();
+            }, 100);
+        }
+
+        function confirmClosePosition(id) {
+            const closePriceInput = document.getElementById('closePrice');
+            const price = parseFloat(closePriceInput.value);
+
+            if (isNaN(price) || price <= 0) {
+                closePriceInput.style.borderColor = '#ef4444';
+                showToast('请输入有效的价格', 'error');
+                return;
+            }
+
+            const positions = getPositions();
+            const position = positions.find(p => p.id === id);
+            if (!position) return;
+
+            let profit = 0;
+            if (position.mode === 'stock') {
+                profit = (price - position.buyPrice) * position.quantity;
+            } else {
+                const product = futuresData[position.futuresProduct];
+                if (product) {
+                    const priceDiff = price - position.buyPrice;
+                    const ticks = priceDiff / product.tickSize;
+                    const tickValue = product.tickSize * product.multiplier;
+                    profit = ticks * tickValue * position.quantity;
+                }
+            }
+
+            updatePosition(id, {
+                status: 'closed',
+                closeTime: new Date().toISOString(),
+                closePrice: price,
+                profit: profit
+            });
+
+            hideModal();
+            showToast(`平仓成功！${profit > 0 ? '盈利' : '亏损'} ¥${formatNumber(Math.abs(profit))}`, profit > 0 ? 'success' : 'error');
+        }
+
+        // Update deletePosition and clearAllHistory to use modal
+        function deletePosition(id) {
+            showModal(
+                '⚠️ 确认删除',
+                '此操作无法撤销',
+                '<p style="color: var(--text-secondary);">确定要删除这个持仓记录吗？</p>',
+                [
+                    {
+                        label: '取消',
+                        primary: false,
+                        onclick: 'hideModal()'
+                    },
+                    {
+                        label: '删除',
+                        primary: true,
+                        onclick: `confirmDeletePosition(${id})`
+                    }
+                ]
+            );
+        }
+
+        function confirmDeletePosition(id) {
+            try {
+                let positions = getPositions();
+                positions = positions.filter(p => p.id !== id);
+                localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+                renderPositionsList();
+                hideModal();
+                showToast('已删除', 'success');
+            } catch (e) {
+                console.error('Failed to delete position:', e);
+                showToast('删除失败', 'error');
+            }
+        }
+
+        function clearAllHistory() {
+            showModal(
+                '⚠️ 清空历史记录',
+                '此操作无法撤销',
+                '<p style="color: var(--text-secondary);">确定要清空所有历史记录吗？</p>',
+                [
+                    {
+                        label: '取消',
+                        primary: false,
+                        onclick: 'hideModal()'
+                    },
+                    {
+                        label: '清空',
+                        primary: true,
+                        onclick: 'confirmClearHistory()'
+                    }
+                ]
+            );
+        }
+
+        function confirmClearHistory() {
+            localStorage.removeItem(STORAGE_KEYS.HISTORY);
+            renderHistoryList();
+            hideModal();
+            showToast('历史记录已清空', 'success');
         }
 
         // Utility function: Format number with thousand separators
