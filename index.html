@@ -1066,9 +1066,116 @@
             color: var(--text-primary);
             font-weight: 500;
         }
+
+        /* Mobile Navigation - Simplified & Robust */
+        .mobile-nav-toggle {
+            display: none; /* Hidden by default on desktop */
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9999; /* Very high z-index */
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .mobile-nav-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-nav-menu {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: #1e293b; /* Dark background */
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            z-index: 9998;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 150px;
+            border: 1px solid #334155;
+        }
+
+        .mobile-nav-menu.show {
+            display: flex;
+        }
+
+        .mobile-nav-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mobile-nav-btn:active {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .mobile-nav-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9990;
+        }
+        
+        .mobile-overlay.show {
+            display: block;
+        }
+
+        /* Show on screens smaller than 768px */
+        @media (max-width: 768px) {
+            .mobile-nav-toggle {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Simplified Mobile Navigation -->
+    <div class="mobile-nav-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+    
+    <button class="mobile-nav-toggle" id="mobileToggleBtn" onclick="toggleMobileMenu()">☰</button>
+
+    <div class="mobile-nav-menu" id="mobileMenu">
+        <div class="mobile-nav-header">
+            <h3>导航菜单</h3>
+        </div>
+        <button class="mobile-nav-btn active" onclick="mobileSwitchTab('calculator', this)">
+            <span class="icon">🧮</span> 计算器
+        </button>
+        <button class="mobile-nav-btn" onclick="mobileSwitchTab('history', this)">
+            <span class="icon">📜</span> 历史记录
+        </button>
+        <button class="mobile-nav-btn" onclick="mobileSwitchTab('positions', this)">
+            <span class="icon">📈</span> 持仓管理
+        </button>
+    </div>
+
     <div class="container">
         <header>
             <h1>股票/期货交易计算器</h1>
@@ -1243,6 +1350,8 @@
                 </div>
             </div>
         </div>
+
+
 
         <!-- Modal Dialog -->
         <div id="modalOverlay" class="modal-overlay">
@@ -1478,6 +1587,63 @@
             } else if (tabName === 'positions') {
                 renderPositionsList();
             }
+        }
+
+        // ===== Simplified Mobile Navigation Logic =====
+        function toggleMobileMenu() {
+            var menu = document.getElementById('mobileMenu');
+            var overlay = document.getElementById('mobileOverlay');
+            var btn = document.getElementById('mobileToggleBtn');
+            
+            if (menu.style.display === 'flex') {
+                menu.style.display = 'none';
+                overlay.style.display = 'none';
+                btn.innerHTML = '☰';
+                menu.classList.remove('show');
+                overlay.classList.remove('show');
+            } else {
+                menu.style.display = 'flex';
+                overlay.style.display = 'block';
+                btn.innerHTML = '✕';
+                // Small delay to allow display:flex to apply before adding class for transition
+                setTimeout(function() {
+                     menu.classList.add('show');
+                     overlay.classList.add('show');
+                }, 10);
+            }
+        }
+
+        function mobileSwitchTab(tabName, btnElement) {
+            // Update active state of buttons
+            var buttons = document.querySelectorAll('.mobile-nav-btn');
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove('active');
+            }
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
+
+            // Hide all tab contents
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            
+            // Show selected tab content
+            var selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+
+            // specific logic for history/positions rendering
+            if (tabName === 'history') {
+                if (typeof renderHistoryList === 'function') renderHistoryList();
+            } else if (tabName === 'positions') {
+                if (typeof renderPositionsList === 'function') renderPositionsList();
+            }
+
+            // Close menu
+            toggleMobileMenu();
         }
 
         // ===== Utility Functions =====
