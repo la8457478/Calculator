@@ -1196,7 +1196,7 @@
             <div class="calculator-card">
                 <div class="card-header">
                     <div class="card-icon">📊</div>
-                    <h2>仓位计算器</h2>
+                    <h2>交易计划计算器</h2>
                 </div>
 
                 <!-- Mode Selector -->
@@ -1248,78 +1248,11 @@
 
                 <div class="result-section" id="result1">
                     <div class="empty-state">
-                        <div class="empty-state-icon">💰</div>
-                        <p>请输入数据以计算仓位</p>
+                        <div class="empty-state-icon">📝</div>
+                        <p>输入参数生成交易计划</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Calculator 2: Profit Target -->
-            <div class="calculator-card">
-                <div class="card-header">
-                    <div class="card-icon">🎯</div>
-                    <h2>止盈计算器</h2>
-                </div>
-
-                <form id="profitForm">
-                    <!-- Futures Product Selector for Calculator 2 -->
-                    <div class="form-group" id="futuresProductGroup2" style="display: none;">
-                        <label for="futuresProduct2">期货品种</label>
-                        <div class="input-wrapper">
-                            <span class="input-prefix">📦</span>
-                            <div class="custom-select-container" id="futuresSelect2">
-                                <input type="text" class="search-input" placeholder="搜索或选择期货品种..." autocomplete="off">
-                                <div class="options-dropdown"></div>
-                                <input type="hidden" id="futuresProduct2">
-                            </div>
-                        </div>
-                        <div class="info-badge" id="futuresInfo2" style="display: none;"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="buyPrice2"><span id="buyLabel2">买入价格</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-prefix">¥</span>
-                            <input type="number" id="buyPrice2" step="0.01" min="0" required>
-                        </div>
-                        <div class="error-message" id="error2"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="stopLoss2"><span id="stopLabel2">止损价格</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-prefix">¥</span>
-                            <input type="number" id="stopLoss2" step="0.01" min="0" required>
-                        </div>
-                    </div>
-                </form>
-
-                <div class="result-section" id="result2">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📈</div>
-                        <p>请输入数据以计算止盈价</p>
-                    </div>
-                </div>
-
-                <div class="price-visualization" id="priceViz">
-                    <div class="price-bar"></div>
-                    <div class="price-markers">
-                        <div class="price-marker">
-                            <div class="price-marker-label">止损</div>
-                            <div class="price-marker-value" id="vizStopLoss">-</div>
-                        </div>
-                        <div class="price-marker">
-                            <div class="price-marker-label">买入</div>
-                            <div class="price-marker-value" id="vizEntry">-</div>
-                        </div>
-                        <div class="price-marker">
-                            <div class="price-marker-label">止盈</div>
-                            <div class="price-marker-value" id="vizTarget">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
         </div> <!-- End Calculator Tab -->
 
         <!-- History Tab -->
@@ -1463,9 +1396,39 @@
 
         let currentMode = 'stock';
         let selectedFuturesProduct = null;
-        let selectedFuturesProduct2 = null;
         let lastCalculation1 = null; // Store last calculation for saving
-        let lastCalculation2 = null;
+
+        // ... (LocalStorage management remains same) ...
+
+        // Mode switcher
+        function switchMode(mode, button) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            const futuresGroup = document.getElementById('futuresProductGroup');
+            const buyLabel1 = document.getElementById('buyLabel1');
+            const stopLabel1 = document.getElementById('stopLabel1');
+            
+            if (mode === 'futures') {
+                futuresGroup.style.display = 'block';
+                buyLabel1.textContent = '开仓价格';
+                stopLabel1.textContent = '止损价格';
+            } else {
+                futuresGroup.style.display = 'none';
+                buyLabel1.textContent = '买入价格';
+                stopLabel1.textContent = '止损价格';
+                
+                // Reset selections
+                selectedFuturesProduct = null;
+                
+                // Clear inputs
+                document.querySelectorAll('.custom-select-container input').forEach(inp => inp.value = '');
+                
+                document.getElementById('futuresInfo').style.display = 'none';
+            }
+            calculatePosition();
+        }
 
         // ===== LocalStorage Management =====
         const STORAGE_KEYS = {
@@ -1676,7 +1639,7 @@
             }
 
             container.innerHTML = history.map(item => {
-                const typeLabel = item.type === 'position' ? '仓位计算' : '止盈计算';
+                const typeLabel = item.type === 'position' ? '交易计划' : '止盈计算';
                 const modeLabel = item.mode === 'stock' ? '股票' : '期货';
                 const productLabel = item.futuresProduct ? ` · ${futuresData[item.futuresProduct]?.name || item.futuresProduct}` : '';
 
@@ -1686,18 +1649,19 @@
                         <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
                         <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
                         <div class="history-detail">风险: <strong>¥${formatNumber(item.inputs.riskAmount)}</strong></div>
-                        <div class="history-detail">1:1价格: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
+                        <div class="history-detail">1:1平衡: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
+                        <div class="history-detail">3:1止盈: <strong>¥${formatNumber(item.results.profitTarget || 0)}</strong></div>
                         ${item.mode === 'stock' ? 
                             `<div class="history-detail">建议股数: <strong>${formatNumber(item.results.shares, 0)}</strong></div>` :
                             `<div class="history-detail">建议手数: <strong>${item.results.contracts}</strong></div>`
                         }
                     `;
                 } else {
+                    // Legacy support for old Calculator 2 records
                     detailsHTML = `
                         <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
                         <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
                         <div class="history-detail">止盈: <strong>¥${formatNumber(item.results.profitTarget)}</strong></div>
-                        <div class="history-detail">1:1价格: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
                     `;
                 }
 
@@ -1738,6 +1702,9 @@
                 const isClosed = pos.status === 'closed';
                 const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
                 
+                // Fallback for old data or if newly saved data uses different keys
+                const targetPrice = pos.profitTarget || pos.targetPrice || 0;
+
                 return `
                     <div class="position-card ${isClosed ? 'closed' : ''}">
                         <div class="position-header">
@@ -1754,8 +1721,8 @@
                                 <span class="position-detail-value">¥${formatNumber(pos.stopLoss)}</span>
                             </div>
                             <div class="position-detail-row">
-                                <span class="position-detail-label">1:1目标价</span>
-                                <span class="position-detail-value">¥${formatNumber(pos.targetPrice)}</span>
+                                <span class="position-detail-label">3:1目标价</span>
+                                <span class="position-detail-value">¥${formatNumber(targetPrice)}</span>
                             </div>
                             <div class="position-detail-row">
                                 <span class="position-detail-label">数量</span>
@@ -1979,7 +1946,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Custom Searchable Selects
             initSearchableSelect('futuresSelect1');
-            initSearchableSelect('futuresSelect2');
 
             // Listener for Calculator 1
             const hiddenFutures1 = document.getElementById('futuresProduct');
@@ -1997,24 +1963,6 @@
                     infoEl.style.display = 'none';
                 }
                 calculatePosition();
-            });
-
-            // Listener for Calculator 2
-            const hiddenFutures2 = document.getElementById('futuresProduct2');
-            hiddenFutures2.addEventListener('change', function() {
-                const productCode = this.value;
-                const infoEl = document.getElementById('futuresInfo2');
-                
-                if (productCode && futuresData[productCode]) {
-                    selectedFuturesProduct2 = futuresData[productCode];
-                    const tickValue = selectedFuturesProduct2.tickSize * selectedFuturesProduct2.multiplier;
-                    infoEl.textContent = `每跳${selectedFuturesProduct2.tickSize}${selectedFuturesProduct2.unit}，盈亏变动 ¥${tickValue}`;
-                    infoEl.style.display = 'inline-block';
-                } else {
-                    selectedFuturesProduct2 = null;
-                    infoEl.style.display = 'none';
-                }
-                calculateProfitTarget();
             });
         });
 
@@ -2337,9 +2285,9 @@
                 return;
             }
 
-            // Validation: buy price must be greater than stop loss
-            if (buy <= stop) {
-                error1.textContent = '错误：开仓价格必须高于止损价格';
+            // Validation: buy price cannot equal stop loss
+            if (buy === stop) {
+                error1.textContent = '错误：开仓价格不能等于止损价格';
                 error1.classList.add('show');
                 result1.innerHTML = `
                     <div class="empty-state">
@@ -2352,16 +2300,27 @@
             }
 
             // Calculate based on mode
+            const isLong = buy > stop;
+            const directionMultiplier = isLong ? 1 : -1;
+            const directionLabel = isLong ? '做多' : '做空';
+            const priceDiff = Math.abs(buy - stop);
+
             if (currentMode === 'futures' && selectedFuturesProduct) {
                 // Futures calculation
-                const priceDiff = buy - stop;
                 const riskPerPoint = priceDiff / selectedFuturesProduct.tickSize;
                 const valuePerTick = selectedFuturesProduct.tickSize * selectedFuturesProduct.multiplier;
                 const riskPerContract = riskPerPoint * valuePerTick;
+                
+                // Calculate max contracts allowed by risk
                 const contracts = Math.floor(risk / riskPerContract);
+                
                 const totalMargin = contracts * buy * selectedFuturesProduct.multiplier * 0.1; // Assume 10% margin
                 const actualRisk = contracts * riskPerContract;
-                const breakEvenPrice = buy + priceDiff; // 1:1 profit target price
+                
+                // Targets
+                const target1to1 = buy + (priceDiff * directionMultiplier);
+                const target3to1 = buy + (priceDiff * 3 * directionMultiplier);
+                const projectedProfit = contracts * (riskPerContract * 3);
 
                 // Save calculation for history and position saving
                 lastCalculation1 = {
@@ -2374,7 +2333,8 @@
                         contracts, 
                         totalMargin, 
                         actualRisk,
-                        breakEvenPrice
+                        breakEvenPrice: target1to1,
+                        profitTarget: target3to1
                     }
                 };
 
@@ -2388,34 +2348,53 @@
                 result1.classList.add('has-result');
                 result1.innerHTML = `
                     <div class="result-item" style="animation-delay: 0s">
-                        <span class="result-label">每手风险</span>
-                        <span class="result-value">¥${formatNumber(riskPerContract)}</span>
+                        <span class="result-label">交易方向</span>
+                        <span class="result-value" style="color: ${isLong ? 'var(--success-color)' : 'var(--danger-color)'}">${directionLabel}</span>
                     </div>
-                    <div class="result-item" style="animation-delay: 0.1s">
-                        <span class="result-label">建议开仓手数</span>
+                    <div class="result-item" style="animation-delay: 0s">
+                        <span class="result-label">建议开仓</span>
                         <span class="result-value highlight">${formatNumber(contracts, 0)} 手</span>
                     </div>
-                    <div class="result-item" style="animation-delay: 0.2s">
-                        <span class="result-label">预估保证金</span>
-                        <span class="result-value">¥${formatNumber(totalMargin)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.3s">
+                    <div class="result-item" style="animation-delay: 0.1s">
                         <span class="result-label">实际风险</span>
                         <span class="result-value">¥${formatNumber(actualRisk)}</span>
                     </div>
+                    
+                    <div style="border-top: 1px solid var(--border-color); margin: 8px 0;"></div>
+
+                    <div class="result-item" style="animation-delay: 0.2s">
+                        <span class="result-label">1:1 盈亏平衡</span>
+                        <span class="result-value">¥${formatNumber(target1to1)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.3s">
+                        <span class="result-label">3:1 止盈目标</span>
+                        <span class="result-value highlight">¥${formatNumber(target3to1)}</span>
+                    </div>
                     <div class="result-item" style="animation-delay: 0.4s">
-                        <span class="result-label">1:1盈亏比价格</span>
-                        <span class="result-value highlight">¥${formatNumber(breakEvenPrice)}</span>
+                        <span class="result-label">预期盈利 (3:1)</span>
+                        <span class="result-value">¥${formatNumber(projectedProfit)}</span>
+                    </div>
+                     <div class="result-item" style="animation-delay: 0.5s">
+                        <span class="result-label">预估保证金</span>
+                        <span class="result-value">¥${formatNumber(totalMargin)}</span>
                     </div>
                     <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
             } else {
                 // Stock calculation
-                const riskPerShare = buy - stop;
-                const shares = Math.floor(risk / riskPerShare);
+                
+                // Calculate max shares allowed by risk
+                const maxShares = Math.floor(risk / priceDiff);
+                // Round down to nearest 100 shares (1 Lot)
+                const shares = Math.floor(maxShares / 100) * 100;
+                
                 const totalInvestment = shares * buy;
-                const actualRisk = shares * riskPerShare;
-                const breakEvenPrice = buy + riskPerShare; // 1:1 profit target price
+                const actualRisk = shares * priceDiff;
+                
+                // Targets
+                const target1to1 = buy + (priceDiff * directionMultiplier);
+                const target3to1 = buy + (priceDiff * 3 * directionMultiplier);
+                const projectedProfit = shares * (priceDiff * 3);
 
                 // Save calculation for history and position saving
                 lastCalculation1 = {
@@ -2424,11 +2403,12 @@
                     futuresProduct: null,
                     inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
                     results: { 
-                        riskPerShare, 
+                        riskPerShare: priceDiff, 
                         shares, 
                         totalInvestment, 
                         actualRisk,
-                        breakEvenPrice
+                        breakEvenPrice: target1to1,
+                        profitTarget: target3to1
                     }
                 };
 
@@ -2442,24 +2422,35 @@
                 result1.classList.add('has-result');
                 result1.innerHTML = `
                     <div class="result-item" style="animation-delay: 0s">
-                        <span class="result-label">每股风险</span>
-                        <span class="result-value">¥${formatNumber(riskPerShare)}</span>
+                        <span class="result-label">交易方向</span>
+                        <span class="result-value" style="color: ${isLong ? 'var(--success-color)' : 'var(--danger-color)'}">${directionLabel}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0s">
+                        <span class="result-label">建议开仓</span>
+                        <span class="result-value highlight">${formatNumber(shares, 0)} 股</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.1s">
-                        <span class="result-label">应购买股数</span>
-                        <span class="result-value highlight">${formatNumber(shares, 0)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.2s">
-                        <span class="result-label">总投资金额</span>
-                        <span class="result-value">¥${formatNumber(totalInvestment)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.3s">
                         <span class="result-label">实际风险</span>
                         <span class="result-value">¥${formatNumber(actualRisk)}</span>
                     </div>
+
+                    <div style="border-top: 1px solid var(--border-color); margin: 8px 0;"></div>
+
+                    <div class="result-item" style="animation-delay: 0.2s">
+                        <span class="result-label">1:1 盈亏平衡</span>
+                        <span class="result-value">¥${formatNumber(target1to1)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.3s">
+                        <span class="result-label">3:1 止盈目标</span>
+                        <span class="result-value highlight">¥${formatNumber(target3to1)}</span>
+                    </div>
                     <div class="result-item" style="animation-delay: 0.4s">
-                        <span class="result-label">1:1盈亏比价格</span>
-                        <span class="result-value highlight">¥${formatNumber(breakEvenPrice)}</span>
+                        <span class="result-label">预期盈利 (3:1)</span>
+                        <span class="result-value">¥${formatNumber(projectedProfit)}</span>
+                    </div>
+                    <div class="result-item" style="animation-delay: 0.5s">
+                        <span class="result-label">总投资金额</span>
+                        <span class="result-value">¥${formatNumber(totalInvestment)}</span>
                     </div>
                     <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
@@ -2471,178 +2462,6 @@
         stopLoss1.addEventListener('input', calculatePosition);
         riskAmount.addEventListener('input', calculatePosition);
 
-        // Calculator 2: Profit Target Calculator
-        const buyPrice2 = document.getElementById('buyPrice2');
-        const stopLoss2 = document.getElementById('stopLoss2');
-        const result2 = document.getElementById('result2');
-        const error2 = document.getElementById('error2');
-        const priceViz = document.getElementById('priceViz');
-        const vizStopLoss = document.getElementById('vizStopLoss');
-        const vizEntry = document.getElementById('vizEntry');
-        const vizTarget = document.getElementById('vizTarget');
-
-        function calculateProfitTarget() {
-            const buy = parseFloat(buyPrice2.value);
-            const stop = parseFloat(stopLoss2.value);
-
-            // Clear previous error
-            error2.classList.remove('show');
-
-            // Validate inputs
-            if (!buy || !stop) {
-                result2.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📈</div>
-                        <p>请输入数据以计算止盈价</p>
-                    </div>
-                `;
-                result2.classList.remove('has-result');
-                priceViz.classList.remove('show');
-                return;
-            }
-
-            // Validation: buy price must be greater than stop loss
-            if (buy <= stop) {
-                error2.textContent = '错误：开仓价格必须高于止损价格';
-                error2.classList.add('show');
-                result2.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <p>请修正输入数据</p>
-                    </div>
-                `;
-                result2.classList.remove('has-result');
-                priceViz.classList.remove('show');
-                return;
-            }
-
-            // Validate futures product selection for Calculator 2
-            if (currentMode === 'futures' && !selectedFuturesProduct2) {
-                error2.textContent = '错误：请先选择期货品种';
-                error2.classList.add('show');
-                result2.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <p>请选择期货品种</p>
-                    </div>
-                `;
-                result2.classList.remove('has-result');
-                priceViz.classList.remove('show');
-                return;
-            }
-
-            // Calculate based on mode
-            if (currentMode === 'futures' && selectedFuturesProduct2) {
-                // Futures calculation
-                const risk = buy - stop;
-                const profitTarget = buy + risk;
-                const riskRewardRatio = 1; // Always 1:1
-                const riskInTicks = risk / selectedFuturesProduct2.tickSize;
-                const profitInTicks = riskInTicks;
-                const tickValue = selectedFuturesProduct2.tickSize * selectedFuturesProduct2.multiplier;
-
-                // Save calculation for history and position saving
-                lastCalculation2 = {
-                    type: 'profitTarget',
-                    mode: 'futures',
-                    futuresProduct: selectedFuturesProduct2.code,
-                    inputs: { buyPrice: buy, stopLoss: stop },
-                    results: { 
-                        riskInTicks, 
-                        profitTarget,
-                        breakEvenPrice: profitTarget
-                    }
-                };
-
-                // Save to history
-                saveHistory({
-                    id: Date.now(),
-                    ...lastCalculation2,
-                    timestamp: Date.now()
-                });
-
-                // Display results
-                result2.classList.add('has-result');
-                result2.innerHTML = `
-                    <div class="result-item" style="animation-delay: 0s">
-                        <span class="result-label">每手风险(点)</span>
-                        <span class="result-value">${formatNumber(riskInTicks, 1)} 点</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.1s">
-                        <span class="result-label">每手风险(金额)</span>
-                        <span class="result-value">¥${formatNumber(riskInTicks * tickValue)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.2s">
-                        <span class="result-label">1:1止盈目标价</span>
-                        <span class="result-value highlight">¥${formatNumber(profitTarget)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.3s">
-                        <span class="result-label">风险回报比</span>
-                        <span class="result-value">1:${riskRewardRatio}</span>
-                    </div>
-                    <button class="save-position-btn" onclick="saveCalculationAsPosition(2)">💾 保存为持仓</button>
-                `;
-
-                // Update visualization
-                vizStopLoss.textContent = `¥${formatNumber(stop)}`;
-                vizEntry.textContent = `¥${formatNumber(buy)}`;
-                vizTarget.textContent = `¥${formatNumber(profitTarget)}`;
-                priceViz.classList.add('show');
-            } else {
-                // Stock calculation
-                const risk = buy - stop;
-                const profitTarget = buy + risk;
-                const riskRewardRatio = 1; // Always 1:1 based on requirement
-
-                // Save calculation for history and position saving
-                lastCalculation2 = {
-                    type: 'profitTarget',
-                    mode: 'stock',
-                    futuresProduct: null,
-                    inputs: { buyPrice: buy, stopLoss: stop },
-                    results: { 
-                        risk, 
-                        profitTarget,
-                        breakEvenPrice: profitTarget
-                    }
-                };
-
-                // Save to history
-                saveHistory({
-                    id: Date.now(),
-                    ...lastCalculation2,
-                    timestamp: Date.now()
-                });
-
-                // Display results
-                result2.classList.add('has-result');
-                result2.innerHTML = `
-                    <div class="result-item" style="animation-delay: 0s">
-                        <span class="result-label">每股风险</span>
-                        <span class="result-value">¥${formatNumber(risk)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.1s">
-                        <span class="result-label">1:1止盈目标价</span>
-                        <span class="result-value highlight">¥${formatNumber(profitTarget)}</span>
-                    </div>
-                    <div class="result-item" style="animation-delay: 0.2s">
-                        <span class="result-label">风险回报比</span>
-                        <span class="result-value">1:${riskRewardRatio}</span>
-                    </div>
-                    <button class="save-position-btn" onclick="saveCalculationAsPosition(2)">💾 保存为持仓</button>
-                `;
-
-                // Update visualization
-                vizStopLoss.textContent = `¥${formatNumber(stop)}`;
-                vizEntry.textContent = `¥${formatNumber(buy)}`;
-                vizTarget.textContent = `¥${formatNumber(profitTarget)}`;
-                priceViz.classList.add('show');
-            }
-        }
-
-        // Add event listeners for Calculator 2
-        buyPrice2.addEventListener('input', calculateProfitTarget);
-        stopLoss2.addEventListener('input', calculateProfitTarget);
     </script>
 </body>
 </html>
