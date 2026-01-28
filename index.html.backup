@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>计算器 </title>
+    <title>股票/期货交易计算器 - 仓位与止盈计算工具</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -483,100 +483,6 @@
             background: rgba(148, 163, 184, 0.05);
             color: var(--text-primary);
         }
-
-        /* Custom Searchable Select */
-        .custom-select-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 14px 16px 14px 40px;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-            outline: none;
-            background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3ccircle cx="11" cy="11" r="8"%3e%3c/circle%3e%3cline x1="21" y1="21" x2="16.65" y2="16.65"%3e%3c/line%3e%3c/svg%3e');
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        }
-
-        .options-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            width: 100%;
-            max-height: 300px;
-            overflow-y: auto;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            z-index: 100;
-            display: none;
-            box-shadow: var(--shadow-xl);
-        }
-
-        .options-dropdown.show {
-            display: block;
-            animation: fadeIn 0.2s ease;
-        }
-
-        .option-group-label {
-            padding: 8px 16px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            background: rgba(148, 163, 184, 0.1);
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            backdrop-filter: blur(10px);
-        }
-
-        .option-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .option-item:last-child {
-            border-bottom: none;
-        }
-
-        .option-item:hover, .option-item.selected {
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .option-item .option-main {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .option-item .option-sub {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-        
-        .no-results {
-            padding: 16px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
     </style>
 </head>
 <body>
@@ -606,11 +512,40 @@
                         <label for="futuresProduct">期货品种</label>
                         <div class="input-wrapper">
                             <span class="input-prefix">📦</span>
-                            <div class="custom-select-container" id="futuresSelect1">
-                                <input type="text" class="search-input" placeholder="搜索或选择期货品种..." autocomplete="off">
-                                <div class="options-dropdown"></div>
-                                <input type="hidden" id="futuresProduct">
-                            </div>
+                            <select id="futuresProduct">
+                                <option value="">请选择期货品种</option>
+                                <optgroup label="贵金属">
+                                    <option value="AU">黄金(AU) - 1000克/手</option>
+                                    <option value="AG">白银(AG) - 15千克/手</option>
+                                </optgroup>
+                                <optgroup label="黑色系">
+                                    <option value="RB">螺纹钢(RB) - 10吨/手</option>
+                                    <option value="HC">热轧卷板(HC) - 10吨/手</option>
+                                    <option value="I">铁矿石(I) - 100吨/手</option>
+                                    <option value="J">焦炭(J) - 100吨/手</option>
+                                    <option value="JM">焦煤(JM) - 60吨/手</option>
+                                </optgroup>
+                                <optgroup label="有色金属">
+                                    <option value="CU">铜(CU) - 5吨/手</option>
+                                    <option value="AL">铝(AL) - 5吨/手</option>
+                                    <option value="ZN">锌(ZN) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="化工">
+                                    <option value="TA">PTA(TA) - 5吨/手</option>
+                                    <option value="MA">甲醇(MA) - 10吨/手</option>
+                                    <option value="PP">聚丙烯(PP) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="能源">
+                                    <option value="SC">原油(SC) - 1000桶/手</option>
+                                    <option value="FU">燃料油(FU) - 10吨/手</option>
+                                </optgroup>
+                                <optgroup label="农产品">
+                                    <option value="M">豆粕(M) - 10吨/手</option>
+                                    <option value="Y">豆油(Y) - 10吨/手</option>
+                                    <option value="P">棕榈油(P) - 10吨/手</option>
+                                    <option value="C">玉米(C) - 10吨/手</option>
+                                </optgroup>
+                            </select>
                         </div>
                         <div class="info-badge" id="futuresInfo" style="display: none;"></div>
                     </div>
@@ -662,11 +597,40 @@
                         <label for="futuresProduct2">期货品种</label>
                         <div class="input-wrapper">
                             <span class="input-prefix">📦</span>
-                            <div class="custom-select-container" id="futuresSelect2">
-                                <input type="text" class="search-input" placeholder="搜索或选择期货品种..." autocomplete="off">
-                                <div class="options-dropdown"></div>
-                                <input type="hidden" id="futuresProduct2">
-                            </div>
+                            <select id="futuresProduct2">
+                                <option value="">请选择期货品种</option>
+                                <optgroup label="贵金属">
+                                    <option value="AU">黄金(AU) - 1000克/手</option>
+                                    <option value="AG">白银(AG) - 15千克/手</option>
+                                </optgroup>
+                                <optgroup label="黑色系">
+                                    <option value="RB">螺纹钢(RB) - 10吨/手</option>
+                                    <option value="HC">热轧卷板(HC) - 10吨/手</option>
+                                    <option value="I">铁矿石(I) - 100吨/手</option>
+                                    <option value="J">焦炭(J) - 100吨/手</option>
+                                    <option value="JM">焦煤(JM) - 60吨/手</option>
+                                </optgroup>
+                                <optgroup label="有色金属">
+                                    <option value="CU">铜(CU) - 5吨/手</option>
+                                    <option value="AL">铝(AL) - 5吨/手</option>
+                                    <option value="ZN">锌(ZN) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="化工">
+                                    <option value="TA">PTA(TA) - 5吨/手</option>
+                                    <option value="MA">甲醇(MA) - 10吨/手</option>
+                                    <option value="PP">聚丙烯(PP) - 5吨/手</option>
+                                </optgroup>
+                                <optgroup label="能源">
+                                    <option value="SC">原油(SC) - 1000桶/手</option>
+                                    <option value="FU">燃料油(FU) - 10吨/手</option>
+                                </optgroup>
+                                <optgroup label="农产品">
+                                    <option value="M">豆粕(M) - 10吨/手</option>
+                                    <option value="Y">豆油(Y) - 10吨/手</option>
+                                    <option value="P">棕榈油(P) - 10吨/手</option>
+                                    <option value="C">玉米(C) - 10吨/手</option>
+                                </optgroup>
+                            </select>
                         </div>
                         <div class="info-badge" id="futuresInfo2" style="display: none;"></div>
                     </div>
@@ -722,143 +686,32 @@
     </div>
 
     <script>
-        // Futures products data with Category info
+        // Futures products data
         const futuresData = {
-            'AU': { name: '黄金', code: 'AU', category: '贵金属', pointValue: 1000, tickSize: 0.05, unit: '元/克', multiplier: 1000 },
-            'AG': { name: '白银', code: 'AG', category: '贵金属', pointValue: 15, tickSize: 1, unit: '元/千克', multiplier: 15 },
-            'RB': { name: '螺纹钢', code: 'RB', category: '黑色系', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
-            'HC': { name: '热轧卷板', code: 'HC', category: '黑色系', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
-            'I': { name: '铁矿石', code: 'I', category: '黑色系', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
-            'J': { name: '焦炭', code: 'J', category: '黑色系', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
-            'JM': { name: '焦煤', code: 'JM', category: '黑色系', pointValue: 60, tickSize: 0.5, unit: '元/吨', multiplier: 60 },
-            'CU': { name: '铜', code: 'CU', category: '有色金属', pointValue: 5, tickSize: 10, unit: '元/吨', multiplier: 5 },
-            'AL': { name: '铝', code: 'AL', category: '有色金属', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
-            'ZN': { name: '锌', code: 'ZN', category: '有色金属', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
-            'TA': { name: 'PTA', code: 'TA', category: '化工', pointValue: 5, tickSize: 2, unit: '元/吨', multiplier: 5 },
-            'MA': { name: '甲醇', code: 'MA', category: '化工', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
-            'PP': { name: '聚丙烯', code: 'PP', category: '化工', pointValue: 5, tickSize: 1, unit: '元/吨', multiplier: 5 },
-            'SC': { name: '原油', code: 'SC', category: '能源', pointValue: 1000, tickSize: 0.1, unit: '元/桶', multiplier: 1000 },
-            'FU': { name: '燃料油', code: 'FU', category: '能源', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
-            'M': { name: '豆粕', code: 'M', category: '农产品', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
-            'Y': { name: '豆油', code: 'Y', category: '农产品', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
-            'P': { name: '棕榈油', code: 'P', category: '农产品', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
-            'C': { name: '玉米', code: 'C', category: '农产品', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 }
+            'AU': { name: '黄金', pointValue: 1000, tickSize: 0.05, unit: '元/克', multiplier: 1000 },
+            'AG': { name: '白银', pointValue: 15, tickSize: 1, unit: '元/千克', multiplier: 15 },
+            'RB': { name: '螺纹钢', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'HC': { name: '热轧卷板', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'I': { name: '铁矿石', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
+            'J': { name: '焦炭', pointValue: 100, tickSize: 0.5, unit: '元/吨', multiplier: 100 },
+            'JM': { name: '焦煤', pointValue: 60, tickSize: 0.5, unit: '元/吨', multiplier: 60 },
+            'CU': { name: '铜', pointValue: 5, tickSize: 10, unit: '元/吨', multiplier: 5 },
+            'AL': { name: '铝', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
+            'ZN': { name: '锌', pointValue: 5, tickSize: 5, unit: '元/吨', multiplier: 5 },
+            'TA': { name: 'PTA', pointValue: 5, tickSize: 2, unit: '元/吨', multiplier: 5 },
+            'MA': { name: '甲醇', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'PP': { name: '聚丙烯', pointValue: 5, tickSize: 1, unit: '元/吨', multiplier: 5 },
+            'SC': { name: '原油', pointValue: 1000, tickSize: 0.1, unit: '元/桶', multiplier: 1000 },
+            'FU': { name: '燃料油', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'M': { name: '豆粕', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 },
+            'Y': { name: '豆油', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
+            'P': { name: '棕榈油', pointValue: 10, tickSize: 2, unit: '元/吨', multiplier: 10 },
+            'C': { name: '玉米', pointValue: 10, tickSize: 1, unit: '元/吨', multiplier: 10 }
         };
-
-        const categoryOrder = ['贵金属', '黑色系', '有色金属', '化工', '能源', '农产品'];
 
         let currentMode = 'stock';
         let selectedFuturesProduct = null;
         let selectedFuturesProduct2 = null;
-
-        // Custom Searchable Select Logic
-        function initSearchableSelect(wrapperId) {
-            const wrapper = document.getElementById(wrapperId);
-            const input = wrapper.querySelector('.search-input');
-            const dropdown = wrapper.querySelector('.options-dropdown');
-            const hiddenInput = wrapper.querySelector('input[type="hidden"]');
-            
-            let allOptions = [];
-
-            // 1. Build Options List
-            function buildDropdown(filterText = '') {
-                dropdown.innerHTML = '';
-                const filter = filterText.toLowerCase();
-                let hasResults = false;
-
-                categoryOrder.forEach(category => {
-                    // Filter items in this category
-                    const items = Object.values(futuresData).filter(item => 
-                        item.category === category && 
-                        (item.name.toLowerCase().includes(filter) || 
-                         item.code.toLowerCase().includes(filter))
-                    );
-
-                    if (items.length > 0) {
-                        hasResults = true;
-                        // Add Group Label
-                        const groupLabel = document.createElement('div');
-                        groupLabel.className = 'option-group-label';
-                        groupLabel.textContent = category;
-                        dropdown.appendChild(groupLabel);
-
-                        // Add Items
-                        items.forEach(item => {
-                            const desc = `${item.multiplier}${item.unit.split('/')[1] || ''}/手`;
-                            const option = document.createElement('div');
-                            option.className = 'option-item';
-                            if (hiddenInput.value === item.code) {
-                                option.classList.add('selected');
-                            }
-                            option.innerHTML = `
-                                <span class="option-main"><span style="font-weight: 700; margin-right: 4px;">${item.name}</span> (${item.code})</span>
-                                <span class="option-sub">${desc}</span>
-                            `;
-                            
-                            option.addEventListener('click', () => {
-                                selectItem(item);
-                            });
-                            
-                            dropdown.appendChild(option);
-                        });
-                    }
-                });
-
-                if (!hasResults) {
-                    const noResult = document.createElement('div');
-                    noResult.className = 'no-results';
-                    noResult.textContent = '未找到匹配的品种';
-                    dropdown.appendChild(noResult);
-                }
-            }
-
-            // 2. Select Item Action
-            function selectItem(item) {
-                input.value = `${item.name} (${item.code})`;
-                hiddenInput.value = item.code;
-                dropdown.classList.remove('show');
-                buildDropdown(); // Reset dropdown state
-                
-                // Dispatch change event manually
-                const event = new Event('change', { bubbles: true });
-                hiddenInput.dispatchEvent(event);
-            }
-
-            // 3. Input Event Listeners
-            input.addEventListener('focus', () => {
-                buildDropdown(input.value.includes('(') ? '' : input.value); // If value looks like a selection, show all
-                dropdown.classList.add('show');
-            });
-
-            input.addEventListener('input', (e) => {
-                buildDropdown(e.target.value);
-                dropdown.classList.add('show');
-                // Clear selection if user types something new
-                if (hiddenInput.value && !e.target.value.includes(hiddenInput.value)) {
-                    hiddenInput.value = '';
-                    const event = new Event('change', { bubbles: true });
-                    hiddenInput.dispatchEvent(event);
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!wrapper.contains(e.target)) {
-                    dropdown.classList.remove('show');
-                    if (hiddenInput.value && futuresData[hiddenInput.value]) {
-                        // Restore valid view
-                        const item = futuresData[hiddenInput.value];
-                        input.value = `${item.name} (${item.code})`;
-                    } else {
-                        // Clear invalid text
-                         input.value = '';
-                    }
-                }
-            });
-            
-            // Initial build
-            buildDropdown();
-        }
 
         // Mode switcher
         function switchMode(mode, button) {
@@ -887,14 +740,8 @@
                 stopLabel1.textContent = '止损价格';
                 buyLabel2.textContent = '买入价格';
                 stopLabel2.textContent = '止损价格';
-                
-                // Reset selections
                 selectedFuturesProduct = null;
                 selectedFuturesProduct2 = null;
-                
-                // Clear inputs
-                document.querySelectorAll('.custom-select-container input').forEach(inp => inp.value = '');
-                
                 document.getElementById('futuresInfo').style.display = 'none';
                 document.getElementById('futuresInfo2').style.display = 'none';
             }
@@ -904,13 +751,9 @@
 
         // Initialize futures selectors
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Custom Searchable Selects
-            initSearchableSelect('futuresSelect1');
-            initSearchableSelect('futuresSelect2');
-
-            // Listener for Calculator 1
-            const hiddenFutures1 = document.getElementById('futuresProduct');
-            hiddenFutures1.addEventListener('change', function() {
+            // Futures selector for Calculator 1
+            const futuresSelector = document.getElementById('futuresProduct');
+            futuresSelector.addEventListener('change', function() {
                 const productCode = this.value;
                 const infoEl = document.getElementById('futuresInfo');
                 
@@ -926,9 +769,9 @@
                 calculatePosition();
             });
 
-            // Listener for Calculator 2
-            const hiddenFutures2 = document.getElementById('futuresProduct2');
-            hiddenFutures2.addEventListener('change', function() {
+            // Futures selector for Calculator 2
+            const futuresSelector2 = document.getElementById('futuresProduct2');
+            futuresSelector2.addEventListener('change', function() {
                 const productCode = this.value;
                 const infoEl = document.getElementById('futuresInfo2');
                 
@@ -1193,7 +1036,7 @@
                 vizEntry.textContent = `¥${formatNumber(buy)}`;
                 vizTarget.textContent = `¥${formatNumber(profitTarget)}`;
                 priceViz.classList.add('show');
-            }
+            }\r
         }
 
         // Add event listeners for Calculator 2
