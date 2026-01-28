@@ -577,6 +577,327 @@
             color: var(--text-secondary);
             font-size: 0.875rem;
         }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .tab-button.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* History List */
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .history-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .clear-history-btn {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .clear-history-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-item-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .history-item-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .history-item-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .history-detail {
+            color: var(--text-secondary);
+        }
+
+        .history-detail strong {
+            color: var(--text-primary);
+        }
+
+        .delete-history-btn {
+            padding: 4px 12px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-history-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Position Management */
+        .positions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .add-position-btn {
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-position-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .position-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .position-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .position-card.closed {
+            opacity: 0.7;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .position-product {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .position-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .position-status.open {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .position-status.closed {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .position-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .position-detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+        }
+
+        .position-detail-label {
+            color: var(--text-secondary);
+        }
+
+        .position-detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .position-profit {
+            font-size: 1.125rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+
+        .position-profit.positive {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .position-profit.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .position-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .position-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .close-position-btn {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .close-position-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .delete-position-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .delete-position-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .empty-state-large {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-large-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        /* Save Position Button */
+        .save-position-btn {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .save-position-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -586,6 +907,15 @@
             <p class="subtitle">专业的仓位管理与止盈止损计算工具</p>
         </header>
 
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('calculator')">💹 计算器</button>
+            <button class="tab-button" onclick="switchTab('history')">📜 历史记录</button>
+            <button class="tab-button" onclick="switchTab('positions')">📊 持仓管理</button>
+        </div>
+
+        <!-- Calculator Tab -->
+        <div id="calculatorTab" class="tab-content active">
         <div class="calculators-grid">
             <!-- Calculator 1: Position Size -->
             <div class="calculator-card">
@@ -715,6 +1045,36 @@
                 </div>
             </div>
         </div>
+        </div> <!-- End Calculator Tab -->
+
+        <!-- History Tab -->
+        <div id="historyTab" class="tab-content">
+            <div class="history-header">
+                <h2>📜 计算历史</h2>
+                <button class="clear-history-btn" onclick="clearAllHistory()">清空全部</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <div class="empty-state-large">
+                    <div class="empty-state-large-icon">📭</div>
+                    <p>暂无计算记录</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Positions Tab -->
+        <div id="positionsTab" class="tab-content">
+            <div class="positions-header">
+                <h2>📊 持仓管理</h2>
+                <button class="add-position-btn" onclick="showAddPositionDialog()">+ 手动添加</button>
+            </div>
+            <div id="positionsList" class="positions-grid">
+                <div class="empty-state-large">
+                    <div class="empty-state-large-icon">📈</div>
+                    <p>暂无持仓记录</p>
+                    <p style="font-size: 0.875rem; margin-top: 8px;">完成计算后点击"保存为持仓"按钮添加</p>
+                </div>
+            </div>
+        </div>
 
         <footer>
             <p>&copy; 2026 股票/期货交易计算器 · 助力更明智的交易决策</p>
@@ -817,6 +1177,308 @@
         let currentMode = 'stock';
         let selectedFuturesProduct = null;
         let selectedFuturesProduct2 = null;
+        let lastCalculation1 = null; // Store last calculation for saving
+        let lastCalculation2 = null;
+
+        // ===== LocalStorage Management =====
+        const STORAGE_KEYS = {
+            HISTORY: 'calculator_history',
+            POSITIONS: 'calculator_positions'
+        };
+
+        const MAX_HISTORY = 50;
+
+        function saveHistory(record) {
+            try {
+                let history = getHistory();
+                history.unshift(record); // Add to beginning
+                if (history.length > MAX_HISTORY) {
+                    history = history.slice(0, MAX_HISTORY); // Keep only latest 50
+                }
+                localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+                renderHistoryList();
+            } catch (e) {
+                console.error('Failed to save history:', e);
+            }
+        }
+
+        function getHistory() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error('Failed to load history:', e);
+                return [];
+            }
+        }
+
+        function deleteHistory(id) {
+            try {
+                let history = getHistory();
+                history = history.filter(item => item.id !== id);
+                localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+                renderHistoryList();
+            } catch (e) {
+                console.error('Failed to delete history:', e);
+            }
+        }
+
+        function clearAllHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                localStorage.removeItem(STORAGE_KEYS.HISTORY);
+                renderHistoryList();
+            }
+        }
+
+        function savePosition(position) {
+            try {
+                const positions = getPositions();
+                positions.unshift(position);
+                localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+                renderPositionsList();
+                alert('持仓已保存！');
+            } catch (e) {
+                console.error('Failed to save position:', e);
+                alert('保存失败，请重试');
+            }
+        }
+
+        function getPositions() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEYS.POSITIONS);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error('Failed to load positions:', e);
+                return [];
+            }
+        }
+
+        function updatePosition(id, updates) {
+            try {
+                let positions = getPositions();
+                const index = positions.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    positions[index] = { ...positions[index], ...updates };
+                    localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+                    renderPositionsList();
+                }
+            } catch (e) {
+                console.error('Failed to update position:', e);
+            }
+        }
+
+        function deletePosition(id) {
+            if (confirm('确定要删除这个持仓吗？')) {
+                try {
+                    let positions = getPositions();
+                    positions = positions.filter(p => p.id !== id);
+                    localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+                    renderPositionsList();
+                } catch (e) {
+                    console.error('Failed to delete position:', e);
+                }
+            }
+        }
+
+        // ===== Tab Switching =====
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            // Render content if needed
+            if (tabName === 'history') {
+                renderHistoryList();
+            } else if (tabName === 'positions') {
+                renderPositionsList();
+            }
+        }
+
+        // ===== Utility Functions =====
+        function formatNumber(num, decimals = 2) {
+            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // ===== History Rendering =====
+        function renderHistoryList() {
+            const container = document.getElementById('historyList');
+            const history = getHistory();
+
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state-large">
+                        <div class="empty-state-large-icon">📭</div>
+                        <p>暂无计算记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = history.map(item => {
+                const typeLabel = item.type === 'position' ? '仓位计算' : '止盈计算';
+                const modeLabel = item.mode === 'stock' ? '股票' : '期货';
+                const productLabel = item.futuresProduct ? ` · ${futuresData[item.futuresProduct]?.name || item.futuresProduct}` : '';
+
+                let detailsHTML = '';
+                if (item.type === 'position') {
+                    detailsHTML = `
+                        <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
+                        <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
+                        <div class="history-detail">风险: <strong>¥${formatNumber(item.inputs.riskAmount)}</strong></div>
+                        <div class="history-detail">1:1价格: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
+                        ${item.mode === 'stock' ? 
+                            `<div class="history-detail">建议股数: <strong>${formatNumber(item.results.shares, 0)}</strong></div>` :
+                            `<div class="history-detail">建议手数: <strong>${item.results.contracts}</strong></div>`
+                        }
+                    `;
+                } else {
+                    detailsHTML = `
+                        <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
+                        <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
+                        <div class="history-detail">止盈: <strong>¥${formatNumber(item.results.profitTarget)}</strong></div>
+                        <div class="history-detail">1:1价格: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
+                    `;
+                }
+
+                return `
+                    <div class="history-item">
+                        <div class="history-item-header">
+                            <div class="history-item-title">${typeLabel} · ${modeLabel}${productLabel}</div>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <div class="history-item-time">${formatDateTime(item.timestamp)}</div>
+                                <button class="delete-history-btn" onclick="deleteHistory(${item.id})">删除</button>
+                            </div>
+                        </div>
+                        <div class="history-item-details">
+                            ${detailsHTML}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===== Position Rendering =====
+        function renderPositionsList() {
+            const container = document.getElementById('positionsList');
+            const positions = getPositions();
+
+            if (positions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state-large">
+                        <div class="empty-state-large-icon">📈</div>
+                        <p>暂无持仓记录</p>
+                        <p style="font-size: 0.875rem; margin-top: 8px;">完成计算后点击"保存为持仓"按钮添加</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = positions.map(pos => {
+                const isClosed = pos.status === 'closed';
+                const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
+                
+                return `
+                    <div class="position-card ${isClosed ? 'closed' : ''}">
+                        <div class="position-header">
+                            <div class="position-product">${pos.productName}</div>
+                            <div class="position-status ${pos.status}">${isClosed ? '已平仓' : '持仓中'}</div>
+                        </div>
+                        <div class="position-details">
+                            <div class="position-detail-row">
+                                <span class="position-detail-label">买入价</span>
+                                <span class="position-detail-value">¥${formatNumber(pos.buyPrice)}</span>
+                            </div>
+                            <div class="position-detail-row">
+                                <span class="position-detail-label">止损价</span>
+                                <span class="position-detail-value">¥${formatNumber(pos.stopLoss)}</span>
+                            </div>
+                            <div class="position-detail-row">
+                                <span class="position-detail-label">1:1目标价</span>
+                                <span class="position-detail-value">¥${formatNumber(pos.targetPrice)}</span>
+                            </div>
+                            <div class="position-detail-row">
+                                <span class="position-detail-label">数量</span>
+                                <span class="position-detail-value">${pos.quantity} ${pos.mode === 'stock' ? '股' : '手'}</span>
+                            </div>
+                            ${isClosed ? `
+                                <div class="position-detail-row">
+                                    <span class="position-detail-label">平仓价</span>
+                                    <span class="position-detail-value">¥${formatNumber(pos.closePrice)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${isClosed && pos.profit !== null ? `
+                            <div class="position-profit ${profitClass}">
+                                ${pos.profit > 0 ? '+' : ''}¥${formatNumber(pos.profit)}
+                            </div>
+                        ` : ''}
+                        <div class="position-actions">
+                            ${!isClosed ? `
+                                <button class="position-btn close-position-btn" onclick="closePosition(${pos.id})">平仓</button>
+                            ` : ''}
+                            <button class="position-btn delete-position-btn" onclick="deletePosition(${pos.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closePosition(id) {
+            const closePrice = prompt('请输入平仓价格：');
+            if (closePrice === null) return;
+            
+            const price = parseFloat(closePrice);
+            if (isNaN(price) || price <= 0) {
+                alert('请输入有效的价格');
+                return;
+            }
+
+            const positions = getPositions();
+            const position = positions.find(p => p.id === id);
+            if (!position) return;
+
+            let profit = 0;
+            if (position.mode === 'stock') {
+                profit = (price - position.buyPrice) * position.quantity;
+            } else {
+                // Futures calculation
+                const product = futuresData[position.futuresProduct];
+                if (product) {
+                    const priceDiff = price - position.buyPrice;
+                    const ticks = priceDiff / product.tickSize;
+                    const tickValue = product.tickSize * product.multiplier;
+                    profit = ticks * tickValue * position.quantity;
+                }
+            }
+
+            updatePosition(id, {
+                status: 'closed',
+                closeTime: new Date().toISOString(),
+                closePrice: price,
+                profit: profit
+            });
+        }
+
+        function showAddPositionDialog() {
+            alert('手动添加持仓功能开发中...\n建议：完成计算后使用"保存为持仓"按钮');
+        }
 
         // Custom Searchable Select Logic
         function initSearchableSelect(wrapperId) {
@@ -1017,6 +1679,48 @@
             return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
+        // ===== Save Calculation as Position =====
+        function saveCalculationAsPosition(calculatorNum) {
+            const calc = calculatorNum === 1 ? lastCalculation1 : lastCalculation2;
+            if (!calc) {
+                alert('没有可保存的计算结果');
+                return;
+            }
+
+            const quantity = prompt(`请输入${calc.mode === 'stock' ? '股数' : '手数'}：`);
+            if (quantity === null) return;
+
+            const qty = parseInt(quantity);
+            if (isNaN(qty) || qty <= 0) {
+                alert('请输入有效的数量');
+                return;
+            }
+
+            const position = {
+                id: Date.now(),
+                mode: calc.mode,
+                futuresProduct: calc.futuresProduct,
+                productName: calc.mode === 'stock' ? '股票' : (futuresData[calc.futuresProduct]?.name || calc.futuresProduct),
+                buyPrice: calc.inputs.buyPrice,
+                stopLoss: calc.inputs.stopLoss,
+                targetPrice: calc.results.breakEvenPrice || calc.results.profitTarget,
+                quantity: qty,
+                status: 'open',
+                openTime: new Date().toISOString(),
+                closeTime: null,
+                closePrice: null,
+                profit: null,
+                notes: ''
+            };
+
+            savePosition(position);
+        }
+
+        // Utility function: Format number with thousand separators
+        function formatNumber(num, decimals = 2) {
+            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
         // Calculator 1: Position Size Calculator
         const buyPrice1 = document.getElementById('buyPrice1');
         const stopLoss1 = document.getElementById('stopLoss1');
@@ -1082,6 +1786,29 @@
                 const contracts = Math.floor(risk / riskPerContract);
                 const totalMargin = contracts * buy * selectedFuturesProduct.multiplier * 0.1; // Assume 10% margin
                 const actualRisk = contracts * riskPerContract;
+                const breakEvenPrice = buy + priceDiff; // 1:1 profit target price
+
+                // Save calculation for history and position saving
+                lastCalculation1 = {
+                    type: 'position',
+                    mode: 'futures',
+                    futuresProduct: selectedFuturesProduct.code,
+                    inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
+                    results: { 
+                        riskPerContract, 
+                        contracts, 
+                        totalMargin, 
+                        actualRisk,
+                        breakEvenPrice
+                    }
+                };
+
+                // Save to history
+                saveHistory({
+                    id: Date.now(),
+                    ...lastCalculation1,
+                    timestamp: Date.now()
+                });
 
                 result1.classList.add('has-result');
                 result1.innerHTML = `
@@ -1101,6 +1828,11 @@
                         <span class="result-label">实际风险</span>
                         <span class="result-value">¥${formatNumber(actualRisk)}</span>
                     </div>
+                    <div class="result-item" style="animation-delay: 0.4s">
+                        <span class="result-label">1:1盈亏比价格</span>
+                        <span class="result-value highlight">¥${formatNumber(breakEvenPrice)}</span>
+                    </div>
+                    <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
             } else {
                 // Stock calculation
@@ -1108,6 +1840,29 @@
                 const shares = Math.floor(risk / riskPerShare);
                 const totalInvestment = shares * buy;
                 const actualRisk = shares * riskPerShare;
+                const breakEvenPrice = buy + riskPerShare; // 1:1 profit target price
+
+                // Save calculation for history and position saving
+                lastCalculation1 = {
+                    type: 'position',
+                    mode: 'stock',
+                    futuresProduct: null,
+                    inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
+                    results: { 
+                        riskPerShare, 
+                        shares, 
+                        totalInvestment, 
+                        actualRisk,
+                        breakEvenPrice
+                    }
+                };
+
+                // Save to history
+                saveHistory({
+                    id: Date.now(),
+                    ...lastCalculation1,
+                    timestamp: Date.now()
+                });
 
                 result1.classList.add('has-result');
                 result1.innerHTML = `
@@ -1127,6 +1882,11 @@
                         <span class="result-label">实际风险</span>
                         <span class="result-value">¥${formatNumber(actualRisk)}</span>
                     </div>
+                    <div class="result-item" style="animation-delay: 0.4s">
+                        <span class="result-label">1:1盈亏比价格</span>
+                        <span class="result-value highlight">¥${formatNumber(breakEvenPrice)}</span>
+                    </div>
+                    <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
             }
         }
@@ -1206,6 +1966,26 @@
                 const profitInTicks = riskInTicks;
                 const tickValue = selectedFuturesProduct2.tickSize * selectedFuturesProduct2.multiplier;
 
+                // Save calculation for history and position saving
+                lastCalculation2 = {
+                    type: 'profitTarget',
+                    mode: 'futures',
+                    futuresProduct: selectedFuturesProduct2.code,
+                    inputs: { buyPrice: buy, stopLoss: stop },
+                    results: { 
+                        riskInTicks, 
+                        profitTarget,
+                        breakEvenPrice: profitTarget
+                    }
+                };
+
+                // Save to history
+                saveHistory({
+                    id: Date.now(),
+                    ...lastCalculation2,
+                    timestamp: Date.now()
+                });
+
                 // Display results
                 result2.classList.add('has-result');
                 result2.innerHTML = `
@@ -1218,13 +1998,14 @@
                         <span class="result-value">¥${formatNumber(riskInTicks * tickValue)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.2s">
-                        <span class="result-label">止盈目标价</span>
+                        <span class="result-label">1:1止盈目标价</span>
                         <span class="result-value highlight">¥${formatNumber(profitTarget)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.3s">
                         <span class="result-label">风险回报比</span>
                         <span class="result-value">1:${riskRewardRatio}</span>
                     </div>
+                    <button class="save-position-btn" onclick="saveCalculationAsPosition(2)">💾 保存为持仓</button>
                 `;
 
                 // Update visualization
@@ -1238,6 +2019,26 @@
                 const profitTarget = buy + risk;
                 const riskRewardRatio = 1; // Always 1:1 based on requirement
 
+                // Save calculation for history and position saving
+                lastCalculation2 = {
+                    type: 'profitTarget',
+                    mode: 'stock',
+                    futuresProduct: null,
+                    inputs: { buyPrice: buy, stopLoss: stop },
+                    results: { 
+                        risk, 
+                        profitTarget,
+                        breakEvenPrice: profitTarget
+                    }
+                };
+
+                // Save to history
+                saveHistory({
+                    id: Date.now(),
+                    ...lastCalculation2,
+                    timestamp: Date.now()
+                });
+
                 // Display results
                 result2.classList.add('has-result');
                 result2.innerHTML = `
@@ -1246,13 +2047,14 @@
                         <span class="result-value">¥${formatNumber(risk)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.1s">
-                        <span class="result-label">止盈目标价</span>
+                        <span class="result-label">1:1止盈目标价</span>
                         <span class="result-value highlight">¥${formatNumber(profitTarget)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.2s">
                         <span class="result-label">风险回报比</span>
                         <span class="result-value">1:${riskRewardRatio}</span>
                     </div>
+                    <button class="save-position-btn" onclick="saveCalculationAsPosition(2)">💾 保存为持仓</button>
                 `;
 
                 // Update visualization
