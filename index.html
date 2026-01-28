@@ -1418,16 +1418,16 @@
                 <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
             </div>
             <div class="mobile-nav-items">
-                <div class="mobile-nav-item active" onclick="switchTabMobile('calculator')">
+                <div class="mobile-nav-item active" data-tab="calculator">
                     <div class="mobile-nav-icon">💹</div>
                     <div class="mobile-nav-label">计算器</div>
                 </div>
-                <div class="mobile-nav-item" onclick="switchTabMobile('history')">
+                <div class="mobile-nav-item" data-tab="history">
                     <div class="mobile-nav-icon">📜</div>
                     <div class="mobile-nav-label">历史记录</div>
                     <div class="mobile-nav-badge" id="historyCount">0</div>
                 </div>
-                <div class="mobile-nav-item" onclick="switchTabMobile('positions')">
+                <div class="mobile-nav-item" data-tab="positions">
                     <div class="mobile-nav-icon">📊</div>
                     <div class="mobile-nav-label">持仓管理</div>
                     <div class="mobile-nav-badge" id="positionsCount">0</div>
@@ -1672,12 +1672,14 @@
         }
 
         // ===== Mobile Navigation =====
-        function switchTabMobile(tabName) {
+        function switchTabMobile(tabName, clickedItem) {
             // Update mobile nav items
             document.querySelectorAll('.mobile-nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.target.closest('.mobile-nav-item').classList.add('active');
+            if (clickedItem) {
+                clickedItem.classList.add('active');
+            }
 
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -1729,18 +1731,71 @@
             document.getElementById('positionsCount').textContent = positionsCount;
         }
 
-        // Mobile nav toggle
-        document.getElementById('mobileNavToggle').addEventListener('click', function() {
-            const drawer = document.getElementById('mobileNavDrawer');
-            if (drawer.classList.contains('show')) {
-                closeMobileNav();
-            } else {
-                openMobileNav();
-            }
-        });
+        // Initialize mobile navigation when DOM is ready
+        function initMobileNav() {
+            const toggle = document.getElementById('mobileNavToggle');
+            const overlay = document.getElementById('mobileNavOverlay');
+            const navItems = document.querySelectorAll('.mobile-nav-item');
+            
+            if (!toggle || !overlay) return;
 
-        // Close on overlay click
-        document.getElementById('mobileNavOverlay').addEventListener('click', closeMobileNav);
+            // Bind events to nav items
+            navItems.forEach(item => {
+                const tabName = item.getAttribute('data-tab');
+                
+                // Click event
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    switchTabMobile(tabName, item);
+                });
+
+                // Touch event for better mobile support
+                item.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    switchTabMobile(tabName, item);
+                });
+            });
+
+            // Mobile nav toggle - support both click and touch
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer.classList.contains('show')) {
+                    closeMobileNav();
+                } else {
+                    openMobileNav();
+                }
+            });
+
+            // Also add touch event for better mobile support
+            toggle.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer.classList.contains('show')) {
+                    closeMobileNav();
+                } else {
+                    openMobileNav();
+                }
+            });
+
+            // Close on overlay click/touch
+            overlay.addEventListener('click', closeMobileNav);
+            overlay.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                closeMobileNav();
+            });
+        }
+
+        // Call init when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
 
 
         // ===== Utility Functions =====
