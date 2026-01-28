@@ -1240,7 +1240,7 @@
                     <div class="form-group">
                         <label for="riskAmount">最大风险金额</label>
                         <div class="input-wrapper">
-                            <span class="input-prefix">¥</span>
+                            <span class="input-prefix"></span>
                             <input type="number" id="riskAmount" step="0.01" min="0" required>
                         </div>
                     </div>
@@ -1610,8 +1610,10 @@
         }
 
         // ===== Utility Functions =====
-        function formatNumber(num, decimals = 2) {
-            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        function formatNumber(num, maxDecimals = 2) {
+            if (num === null || num === undefined || isNaN(num)) return '-';
+            const val = parseFloat(num.toFixed(maxDecimals));
+            return val.toLocaleString('en-US', { maximumFractionDigits: maxDecimals });
         }
 
         function formatDateTime(timestamp) {
@@ -1639,46 +1641,64 @@
             }
 
             container.innerHTML = history.map(item => {
-                const typeLabel = item.type === 'position' ? '交易计划' : '止盈计算';
-                const modeLabel = item.mode === 'stock' ? '股票' : '期货';
-                const productLabel = item.futuresProduct ? ` · ${futuresData[item.futuresProduct]?.name || item.futuresProduct}` : '';
+                try {
+                    const typeLabel = item.type === 'position' ? '交易计划' : '止盈计算';
+                    const modeLabel = item.mode === 'stock' ? '股票' : '期货';
+                    const productCode = item.futuresProduct;
+                    const productName = futuresData[productCode]?.name || productCode || '';
+                    const productLabel = productCode ? ` · ${productName}` : '';
+                    
+                    // Safe access to inputs
+                    const inputs = item.inputs || {};
+                    const results = item.results || {};
+                    
+                    // Fallbacks for legacy data flattened structure
+                    const buy = inputs.buyPrice || item.buyPrice || 0;
+                    const stop = inputs.stopLoss || item.stopLoss || 0;
+                    const risk = inputs.riskAmount || item.riskAmount || 0;
+                    const target1 = results.breakEvenPrice || item.breakEvenPrice || 0;
+                    const target3 = results.profitTarget || item.profitTarget || 0;
+                    
+                    let detailsHTML = '';
+                    if (item.type === 'position') {
+                        detailsHTML = `
+                            <div class="history-detail">买入: <strong>${formatNumber(buy)}</strong></div>
+                            <div class="history-detail">止损: <strong>${formatNumber(stop)}</strong></div>
+                            <div class="history-detail">风险: <strong>${formatNumber(risk)}</strong></div>
+                            <div class="history-detail">1:1平衡: <strong>${formatNumber(target1)}</strong></div>
+                            <div class="history-detail">3:1止盈: <strong>${formatNumber(target3)}</strong></div>
+                            ${item.mode === 'stock' ? 
+                                `<div class="history-detail">建议股数: <strong>${formatNumber(results.shares || item.shares, 0)}</strong></div>` :
+                                `<div class="history-detail">建议手数: <strong>${formatNumber(results.contracts || item.contracts, 0)}</strong></div>`
+                            }
+                        `;
+                    } else {
+                        // Legacy support for old Calculator 2 records
+                        detailsHTML = `
+                            <div class="history-detail">买入: <strong>${formatNumber(buy)}</strong></div>
+                            <div class="history-detail">止损: <strong>${formatNumber(stop)}</strong></div>
+                            <div class="history-detail">止盈: <strong>${formatNumber(target3)}</strong></div>
+                        `;
+                    }
 
-                let detailsHTML = '';
-                if (item.type === 'position') {
-                    detailsHTML = `
-                        <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
-                        <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
-                        <div class="history-detail">风险: <strong>¥${formatNumber(item.inputs.riskAmount)}</strong></div>
-                        <div class="history-detail">1:1平衡: <strong>¥${formatNumber(item.results.breakEvenPrice)}</strong></div>
-                        <div class="history-detail">3:1止盈: <strong>¥${formatNumber(item.results.profitTarget || 0)}</strong></div>
-                        ${item.mode === 'stock' ? 
-                            `<div class="history-detail">建议股数: <strong>${formatNumber(item.results.shares, 0)}</strong></div>` :
-                            `<div class="history-detail">建议手数: <strong>${item.results.contracts}</strong></div>`
-                        }
-                    `;
-                } else {
-                    // Legacy support for old Calculator 2 records
-                    detailsHTML = `
-                        <div class="history-detail">买入: <strong>¥${formatNumber(item.inputs.buyPrice)}</strong></div>
-                        <div class="history-detail">止损: <strong>¥${formatNumber(item.inputs.stopLoss)}</strong></div>
-                        <div class="history-detail">止盈: <strong>¥${formatNumber(item.results.profitTarget)}</strong></div>
-                    `;
-                }
-
-                return `
-                    <div class="history-item">
-                        <div class="history-item-header">
-                            <div class="history-item-title">${typeLabel} · ${modeLabel}${productLabel}</div>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <div class="history-item-time">${formatDateTime(item.timestamp)}</div>
-                                <button class="delete-history-btn" onclick="deleteHistory(${item.id})">删除</button>
+                    return `
+                        <div class="history-item">
+                            <div class="history-item-header">
+                                <div class="history-item-title">${typeLabel} · ${modeLabel}${productLabel}</div>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <div class="history-item-time">${formatDateTime(item.timestamp)}</div>
+                                    <button class="delete-history-btn" onclick="deleteHistory(${item.id})">删除</button>
+                                </div>
+                            </div>
+                            <div class="history-item-details">
+                                ${detailsHTML}
                             </div>
                         </div>
-                        <div class="history-item-details">
-                            ${detailsHTML}
-                        </div>
-                    </div>
-                `;
+                    `;
+                } catch (e) {
+                    console.error('Render error for history item:', item, e);
+                    return '';
+                }
             }).join('');
         }
 
@@ -1699,55 +1719,60 @@
             }
 
             container.innerHTML = positions.map(pos => {
-                const isClosed = pos.status === 'closed';
-                const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
-                
-                // Fallback for old data or if newly saved data uses different keys
-                const targetPrice = pos.profitTarget || pos.targetPrice || 0;
+                try {
+                    const isClosed = pos.status === 'closed';
+                    const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
+                    
+                    // Fallback for old data or if newly saved data uses different keys
+                    const targetPrice = pos.profitTarget || pos.targetPrice || 0;
 
-                return `
-                    <div class="position-card ${isClosed ? 'closed' : ''}">
-                        <div class="position-header">
-                            <div class="position-product">${pos.productName}</div>
-                            <div class="position-status ${pos.status}">${isClosed ? '已平仓' : '持仓中'}</div>
-                        </div>
-                        <div class="position-details">
-                            <div class="position-detail-row">
-                                <span class="position-detail-label">买入价</span>
-                                <span class="position-detail-value">¥${formatNumber(pos.buyPrice)}</span>
+                    return `
+                        <div class="position-card ${isClosed ? 'closed' : ''}">
+                            <div class="position-header">
+                                <div class="position-product">${pos.productName || 'Unknown Product'}</div>
+                                <div class="position-status ${pos.status}">${isClosed ? '已平仓' : '持仓中'}</div>
                             </div>
-                            <div class="position-detail-row">
-                                <span class="position-detail-label">止损价</span>
-                                <span class="position-detail-value">¥${formatNumber(pos.stopLoss)}</span>
-                            </div>
-                            <div class="position-detail-row">
-                                <span class="position-detail-label">3:1目标价</span>
-                                <span class="position-detail-value">¥${formatNumber(targetPrice)}</span>
-                            </div>
-                            <div class="position-detail-row">
-                                <span class="position-detail-label">数量</span>
-                                <span class="position-detail-value">${pos.quantity} ${pos.mode === 'stock' ? '股' : '手'}</span>
-                            </div>
-                            ${isClosed ? `
+                            <div class="position-details">
                                 <div class="position-detail-row">
-                                    <span class="position-detail-label">平仓价</span>
-                                    <span class="position-detail-value">¥${formatNumber(pos.closePrice)}</span>
+                                    <span class="position-detail-label">买入价</span>
+                                    <span class="position-detail-value">${formatNumber(pos.buyPrice)}</span>
+                                </div>
+                                <div class="position-detail-row">
+                                    <span class="position-detail-label">止损价</span>
+                                    <span class="position-detail-value">${formatNumber(pos.stopLoss)}</span>
+                                </div>
+                                <div class="position-detail-row">
+                                    <span class="position-detail-label">3:1目标价</span>
+                                    <span class="position-detail-value">${formatNumber(targetPrice)}</span>
+                                </div>
+                                <div class="position-detail-row">
+                                    <span class="position-detail-label">数量</span>
+                                    <span class="position-detail-value">${pos.quantity} ${pos.mode === 'stock' ? '股' : '手'}</span>
+                                </div>
+                                ${isClosed ? `
+                                    <div class="position-detail-row">
+                                        <span class="position-detail-label">平仓价</span>
+                                        <span class="position-detail-value">${formatNumber(pos.closePrice)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${isClosed && pos.profit !== null ? `
+                                <div class="position-profit ${profitClass}">
+                                    ${pos.profit > 0 ? '+' : ''}${formatNumber(pos.profit)}
                                 </div>
                             ` : ''}
-                        </div>
-                        ${isClosed && pos.profit !== null ? `
-                            <div class="position-profit ${profitClass}">
-                                ${pos.profit > 0 ? '+' : ''}¥${formatNumber(pos.profit)}
+                            <div class="position-actions">
+                                ${!isClosed ? `
+                                    <button class="position-btn close-position-btn" onclick="closePosition(${pos.id})">平仓</button>
+                                ` : ''}
+                                <button class="position-btn delete-position-btn" onclick="deletePosition(${pos.id})">删除</button>
                             </div>
-                        ` : ''}
-                        <div class="position-actions">
-                            ${!isClosed ? `
-                                <button class="position-btn close-position-btn" onclick="closePosition(${pos.id})">平仓</button>
-                            ` : ''}
-                            <button class="position-btn delete-position-btn" onclick="deletePosition(${pos.id})">删除</button>
                         </div>
-                    </div>
-                `;
+                    `;
+                } catch (e) {
+                    console.error('Render error for position:', pos, e);
+                    return '';
+                }
             }).join('');
         }
 
@@ -1966,10 +1991,7 @@
             });
         });
 
-        // Utility function: Format number with thousand separators
-        function formatNumber(num, decimals = 2) {
-            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
+
 
         // ===== Modal Dialog Utilities =====
         function showModal(title, subtitle, bodyHTML, actions) {
@@ -2239,10 +2261,7 @@
             showToast('历史记录已清空', 'success');
         }
 
-        // Utility function: Format number with thousand separators
-        function formatNumber(num, decimals = 2) {
-            return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
+
 
         // Calculator 1: Position Size Calculator
         const buyPrice1 = document.getElementById('buyPrice1');
@@ -2357,26 +2376,26 @@
                     </div>
                     <div class="result-item" style="animation-delay: 0.1s">
                         <span class="result-label">实际风险</span>
-                        <span class="result-value">¥${formatNumber(actualRisk)}</span>
+                        <span class="result-value">${formatNumber(actualRisk)}</span>
                     </div>
                     
                     <div style="border-top: 1px solid var(--border-color); margin: 8px 0;"></div>
 
                     <div class="result-item" style="animation-delay: 0.2s">
                         <span class="result-label">1:1 盈亏平衡</span>
-                        <span class="result-value">¥${formatNumber(target1to1)}</span>
+                        <span class="result-value">${formatNumber(target1to1)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.3s">
                         <span class="result-label">3:1 止盈目标</span>
-                        <span class="result-value highlight">¥${formatNumber(target3to1)}</span>
+                        <span class="result-value highlight">${formatNumber(target3to1)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.4s">
                         <span class="result-label">预期盈利 (3:1)</span>
-                        <span class="result-value">¥${formatNumber(projectedProfit)}</span>
+                        <span class="result-value">${formatNumber(projectedProfit)}</span>
                     </div>
                      <div class="result-item" style="animation-delay: 0.5s">
                         <span class="result-label">预估保证金</span>
-                        <span class="result-value">¥${formatNumber(totalMargin)}</span>
+                        <span class="result-value">${formatNumber(totalMargin)}</span>
                     </div>
                     <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
@@ -2431,26 +2450,26 @@
                     </div>
                     <div class="result-item" style="animation-delay: 0.1s">
                         <span class="result-label">实际风险</span>
-                        <span class="result-value">¥${formatNumber(actualRisk)}</span>
+                        <span class="result-value">${formatNumber(actualRisk)}</span>
                     </div>
 
                     <div style="border-top: 1px solid var(--border-color); margin: 8px 0;"></div>
 
                     <div class="result-item" style="animation-delay: 0.2s">
                         <span class="result-label">1:1 盈亏平衡</span>
-                        <span class="result-value">¥${formatNumber(target1to1)}</span>
+                        <span class="result-value">${formatNumber(target1to1)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.3s">
                         <span class="result-label">3:1 止盈目标</span>
-                        <span class="result-value highlight">¥${formatNumber(target3to1)}</span>
+                        <span class="result-value highlight">${formatNumber(target3to1)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.4s">
                         <span class="result-label">预期盈利 (3:1)</span>
-                        <span class="result-value">¥${formatNumber(projectedProfit)}</span>
+                        <span class="result-value">${formatNumber(projectedProfit)}</span>
                     </div>
                     <div class="result-item" style="animation-delay: 0.5s">
                         <span class="result-label">总投资金额</span>
-                        <span class="result-value">¥${formatNumber(totalInvestment)}</span>
+                        <span class="result-value">${formatNumber(totalInvestment)}</span>
                     </div>
                     <button class="save-position-btn" onclick="saveCalculationAsPosition(1)">💾 保存为持仓</button>
                 `;
