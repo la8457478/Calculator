@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - Trading Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Mobile Navigation -->
+    <div style="position: fixed; top: 10px; right: 10px; z-index: 10001; display: flex; gap: 10px;">
+        <button id="langToggle" onclick="toggleLanguage()" style="background: #3b82f6; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <span class="lang-text">EN/CN</span>
+        </button>
+        <button onclick="globalReset()" style="background: red; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            ⚠️ <span data-i18n="resetBtn">Reset</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 data-i18n="appTitle">Trading Calculator</h1>
+            <p class="subtitle" data-i18n="appSubtitle">Professional Position Sizing</p>
+        </header>
+
+        <!-- Tab Navigation (Links) -->
+        <div class="tab-navigation">
+            <a href="index.html" class="tab-button" data-i18n="tabCalc">🖥️ Calculator</a>
+            <a href="history.html" class="tab-button active" data-i18n="tabHistory">📝 History</a>
+            <a href="positions.html" class="tab-button" data-i18n="tabPositions">📊 Positions</a>
+        </div>
+
+        <!-- History Content -->
+        <div id="historyTab" class="tab-content active" style="display: block;">
+            <div class="history-header">
+                <h2 data-i18n="sectHistory">📜 Calculation History</h2>
+                <button class="clear-history-btn" onclick="clearAllHistory()" data-i18n="actClearAll">Clear All</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <!-- Content Rendered by JS -->
+            </div>
+        </div>
+        
+        <!-- Modal & Toast Overlay -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal-dialog">
+                <div class="modal-header" id="modalTitle"></div>
+                <div class="modal-subtitle" id="modalSubtitle"></div>
+                <div class="modal-body" id="modalBody"></div>
+                <div class="modal-actions" id="modalActions"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Trading Calculator</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Force render on load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderHistoryList();
+        });
+    </script>
+</body>
+</html>
