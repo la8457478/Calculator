@@ -7,23 +7,25 @@ const TRANSLATIONS = {
         tabHistory: "📝 历史记录",
         tabPositions: "📊 持仓管理",
         resetBtn: "清空数据并重置",
-        
+
         // Form Labels
         calcTitle: "交易计划计算器",
         modeFutures: "期货模式",
         modeStock: "股票模式",
+        stockLabel: "股票代码",
+        phStockSearch: "搜索股票代码/名称/拼音...",
         productLabel: "期货品种",
         phSearch: "搜索或选择期货品种...",
         entryLabel: "买入价格",
         stopLabel: "止损价格",
         lblRiskAmount: "最大风险金额",
-        
+
         // List Headers
         sectHistory: "📜 计算历史",
         actClearAll: "清空全部",
         sectPositions: "📊 持仓管理",
         btnAddPosition: "+ 手动添加",
-        
+
         // Dynamic Items (Used in Renderers)
         lblBuy: "买入",
         lblStop: "止损",
@@ -39,13 +41,13 @@ const TRANSLATIONS = {
         emptyHistory: "暂无计算记录",
         emptyPositions: "暂无持仓记录",
         emptyTip: "完成计算后点击\"保存为持仓\"按钮添加",
-        
+
         // Errors & Messages
         errInput: "请输入数据以计算仓位",
         errProduct: "请选择期货品种",
         errPrice: "错误：开仓价格不能等于止损价格",
         msgFixInput: "请修正输入数据",
-        
+
         // Results
         lblDirection: "方向",
         dirLong: "做多",
@@ -66,23 +68,25 @@ const TRANSLATIONS = {
         tabHistory: "📝 History",
         tabPositions: "📊 Positions",
         resetBtn: "Reset Data",
-        
+
         // Form Labels
         calcTitle: "Trading Plan Calculator",
         modeFutures: "Futures Mode",
         modeStock: "Stock Mode",
+        stockLabel: "Stock Symbol",
+        phStockSearch: "Search Stock/Name...",
         productLabel: "Product",
         phSearch: "Search or select product...",
         entryLabel: "Entry Price",
         stopLabel: "Stop Loss",
         lblRiskAmount: "Max Risk Amount",
-        
+
         // List Headers
         sectHistory: "📜 Calculation History",
         actClearAll: "Clear All",
         sectPositions: "📊 Position Management",
         btnAddPosition: "+ Add Manual",
-        
+
         // Dynamic Items
         lblBuy: "Entry",
         lblStop: "Stop",
@@ -98,7 +102,7 @@ const TRANSLATIONS = {
         emptyHistory: "No History Records",
         emptyPositions: "No Positions",
         emptyTip: "Calculate and click Save to add",
-        
+
         // Errors & Messages
         errInput: "Enter data to calculate",
         errProduct: "Select Product",
@@ -130,7 +134,7 @@ function t(key) {
 
 function updateContent() {
     const dict = TRANSLATIONS[currentLang];
-    
+
     // Update static elements
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -143,22 +147,13 @@ function updateContent() {
         if (dict[key]) el.placeholder = dict[key];
     });
 
-    // Update Toggle Button Text
-    const langText = document.querySelector('.lang-text');
-    if(langText) langText.textContent = currentLang === 'zh' ? 'EN/CN' : 'CN/EN';
-    
+
     // Re-render lists if they exist
     if (typeof renderHistoryList === 'function' && document.getElementById('historyList')) renderHistoryList();
     if (typeof renderPositionsList === 'function' && document.getElementById('positionsListMain')) renderPositionsList();
-    
+
     // Re-calculate if on calculator page
     if (typeof calculatePosition === 'function' && document.getElementById('buyPrice1')) calculatePosition();
-}
-
-function toggleLanguage() {
-    currentLang = currentLang === 'zh' ? 'en' : 'zh';
-    localStorage.setItem('appLang', currentLang);
-    updateContent();
 }
 
 // Futures products data
@@ -256,6 +251,7 @@ const categoryOrder = ['贵金属', '黑色系', '有色金属', '化工', '能�
 // Global State
 let currentMode = 'stock';
 let selectedFuturesProduct = null;
+let selectedStock = null;
 let lastCalculation = null;
 
 // ===== LocalStorage Management =====
@@ -346,7 +342,7 @@ function formatDateTime(timestamp) {
 function renderHistoryList() {
     const container = document.getElementById('historyList');
     if (!container) return;
-    
+
     const history = getHistory();
 
     if (history.length === 0) {
@@ -369,21 +365,21 @@ function renderHistoryList() {
             // Let's re-derive direction label if possible or just use Generic.
             // Better: use stored inputs.
             const isLong = item.inputs.buyPrice > item.inputs.stopLoss;
-             const dirLabel = isLong ? t('dirLong') : t('dirShort');
-            
+            const dirLabel = isLong ? t('dirLong') : t('dirShort');
+
             const buy = item.inputs.buyPrice;
             const stop = item.inputs.stopLoss;
             const risk = item.inputs.riskAmount;
             const target1 = results.profitTarget1_1 || item.profitTarget1_1 || results.breakEvenPrice || 0;
             const target3 = results.profitTarget || item.profitTarget || 0;
-            
+
             let detailsHTML = `
                 <div class="history-detail">${t('lblBuy')}: <strong>${formatNumber(buy)}</strong></div>
                 <div class="history-detail">${t('lblStop')}: <strong>${formatNumber(stop)}</strong></div>
                 <div class="history-detail">${t('lblRisk')}: <strong>${formatNumber(risk)}</strong></div>
                 <div class="history-detail">${t('lblTarget1')}: <strong>${formatNumber(target1)}</strong></div>
                 <div class="history-detail">${t('lblTarget3')}: <strong>${formatNumber(target3)}</strong></div>
-                ${item.mode === 'stock' ? 
+                ${item.mode === 'stock' ?
                     `<div class="history-detail">${t('lblShares')}: <strong>${formatNumber(results.shares || item.shares, 0)}</strong></div>` :
                     `<div class="history-detail">${t('lblContracts')}: <strong>${formatNumber(results.contracts || item.contracts, 0)}</strong></div>`
                 }
@@ -414,18 +410,23 @@ function renderHistoryList() {
 function renderPositionsList() {
     const container = document.getElementById('positionsListMain');
     if (!container) return;
-    
-    const rawPositions = getPositions();
-    const positions = rawPositions.filter(p => p && typeof p === 'object' && p.id);
 
-    container.innerHTML = ''; 
+    const allPositions = getPositions();
+    let positions = allPositions.filter(p => p && typeof p === 'object' && p.id);
+
+    // Filter by User
+    if (typeof currentFilterUser !== 'undefined' && currentFilterUser !== 'all') {
+        positions = positions.filter(p => p.user === currentFilterUser);
+    }
+
+    container.innerHTML = '';
 
     if (positions.length === 0) {
-            container.innerHTML = `
+        container.innerHTML = `
             <div class="empty-state-large">
                 <div class="empty-state-large-icon">📈</div>
                 <p>${t('emptyPositions')}</p>
-                <p style="font-size: 0.875rem; margin-top: 8px;">${t('emptyTip')}</p>
+                <p style="font-size: 0.875rem; margin-top: 8px;">For ${currentFilterUser === 'all' ? 'All Users' : (currentFilterUser === 'liuan' ? 'Liu An' : 'Kang Ge')}</p>
             </div>
         `;
         return;
@@ -437,7 +438,7 @@ function renderPositionsList() {
             const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
             const targetPrice = pos.profitTarget || pos.targetPrice || 0;
             const statusLabel = isClosed ? t('lblClosed') : t('lblOpened');
-            const unitSuffix = pos.mode === 'stock' ? (currentLang==='zh'?'股':'Shares') : (currentLang==='zh'?'手':'Lots');
+            const unitSuffix = pos.mode === 'stock' ? (currentLang === 'zh' ? '股' : 'Shares') : (currentLang === 'zh' ? '手' : 'Lots');
 
             return `
                 <div class="position-card ${isClosed ? 'closed' : ''}">
@@ -482,12 +483,12 @@ function renderPositionsList() {
                     </div>
                 </div>
             `;
-        } catch(e) { 
+        } catch (e) {
             console.error('Render Error:', e);
             return `<div class="position-card error">
                 <div class="position-header"><div class="position-product">⚠️ Data Error</div></div>
                 <div class="position-details">Item ID: ${pos.id || 'Unknown'}</div>
-            </div>`; 
+            </div>`;
         }
     }).join('');
 }
@@ -507,7 +508,7 @@ function deletePositionObj(id) {
 }
 
 function confirmDeletePositionObj(id) {
-     try {
+    try {
         let positions = getPositions();
         positions = positions.filter(p => p.id !== id);
         localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
@@ -538,7 +539,7 @@ function closePosition(id) {
             { label: 'Confirm', primary: true, onclick: `confirmClosePosition(${id})` }
         ]
     );
-     setTimeout(() => {
+    setTimeout(() => {
         document.getElementById('closePrice')?.focus();
     }, 100);
 }
@@ -562,22 +563,22 @@ function confirmClosePosition(id) {
     } else {
         const product = futuresData[position.futuresProduct];
         if (product) {
-             const priceDiff = price - position.buyPrice;
-             // Long or Short? we need direction.
-             // If we don't have direction stored, we assume long? 
-             // Wait, `confirmSavePosition` stores `buyPrice` and `stopLoss`.
-             const isLong = position.buyPrice > position.stopLoss;
-             const directionM = isLong ? 1 : -1;
-             
-             // Profit = (Exit - Entry) * Direction * Quantity * Multiplier ?
-             // If Long: (Price - Buy) 
-             // If Short: (Buy - Price) -> which is -(Price - Buy)
-             // So: (Price - Buy) * DirectionMultiplier
-             
-             const diff = (price - position.buyPrice) * directionM;
-             const ticks = diff / product.tickSize;
-             const tickValue = product.tickSize * product.multiplier;
-             profit = ticks * tickValue * position.quantity;
+            const priceDiff = price - position.buyPrice;
+            // Long or Short? we need direction.
+            // If we don't have direction stored, we assume long? 
+            // Wait, `confirmSavePosition` stores `buyPrice` and `stopLoss`.
+            const isLong = position.buyPrice > position.stopLoss;
+            const directionM = isLong ? 1 : -1;
+
+            // Profit = (Exit - Entry) * Direction * Quantity * Multiplier ?
+            // If Long: (Price - Buy) 
+            // If Short: (Buy - Price) -> which is -(Price - Buy)
+            // So: (Price - Buy) * DirectionMultiplier
+
+            const diff = (price - position.buyPrice) * directionM;
+            const ticks = diff / product.tickSize;
+            const tickValue = product.tickSize * product.multiplier;
+            profit = ticks * tickValue * position.quantity;
         }
     }
 
@@ -600,8 +601,8 @@ function calculatePosition() {
     const riskInput = document.getElementById('riskAmount');
     const result1 = document.getElementById('result1');
     const error1 = document.getElementById('error1');
-    
-    if(!buyInput || !stopInput || !riskInput) return; // Not on calculator page
+
+    if (!buyInput || !stopInput || !riskInput) return; // Not on calculator page
 
     const buy = parseFloat(buyInput.value);
     const stop = parseFloat(stopInput.value);
@@ -620,7 +621,7 @@ function calculatePosition() {
         error1.classList.add('show');
         return;
     }
-    
+
     if (buy === stop) {
         error1.textContent = t('errPrice');
         error1.classList.add('show');
@@ -634,14 +635,14 @@ function calculatePosition() {
 
     // Calculation logic...
     // (Simulating exact logic from before)
-    
-     let contracts = 0;
-     let shares = 0;
-     let actualRisk = 0;
-     let totalVal = 0; // Margin or Investment
-     let projected = 0;
-     let target1 = 0;
-     let target3 = 0;
+
+    let contracts = 0;
+    let shares = 0;
+    let actualRisk = 0;
+    let totalVal = 0; // Margin or Investment
+    let projected = 0;
+    let target1 = 0;
+    let target3 = 0;
 
     if (currentMode === 'futures' && selectedFuturesProduct) {
         const riskPerPoint = priceDiff / selectedFuturesProduct.tickSize;
@@ -653,15 +654,15 @@ function calculatePosition() {
         target1 = buy + (priceDiff * directionMultiplier);
         target3 = buy + (priceDiff * 3 * directionMultiplier);
         projected = contracts * (riskPerContract * 3);
-        
+
         lastCalculation = {
-             type: 'position', mode: 'futures', futuresProduct: selectedFuturesProduct.code,
-             inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
-             results: { contracts, totalMargin: totalVal, actualRisk, profitTarget: target3, profitTarget1_1: target1 }
+            type: 'position', mode: 'futures', futuresProduct: selectedFuturesProduct.code,
+            inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
+            results: { contracts, totalMargin: totalVal, actualRisk, profitTarget: target3, profitTarget1_1: target1 }
         };
 
         result1.innerHTML = `
-            <div class="result-item"><span class="result-label">${t('lblDirection')}</span><span class="result-value" style="color:${isLong?'#22c55e':'#ef4444'}">${directionLabel}</span></div>
+            <div class="result-item"><span class="result-label">${t('lblDirection')}</span><span class="result-value" style="color:${isLong ? '#22c55e' : '#ef4444'}">${directionLabel}</span></div>
             <div class="result-item"><span class="result-label">${t('resPositionSize')}</span><span class="result-value highlight">${contracts} ${t('resContracts')}</span></div>
             <div class="result-item"><span class="result-label">${t('resRiskAmount')}</span><span class="result-value">${formatNumber(actualRisk)}</span></div>
             <div style="border-top:1px solid #334; margin:8px 0"></div>
@@ -678,15 +679,20 @@ function calculatePosition() {
         actualRisk = shares * priceDiff;
         target1 = buy + (priceDiff * directionMultiplier);
         target3 = buy + (priceDiff * 3 * directionMultiplier);
-        
+
         lastCalculation = {
-             type: 'position', mode: 'stock',
-             inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
-             results: { shares, totalInvestment: totalVal, actualRisk, profitTarget: target3, profitTarget1_1: target1 }
+            type: 'position', mode: 'stock',
+            inputs: { buyPrice: buy, stopLoss: stop, riskAmount: risk },
+            results: { shares, totalInvestment: totalVal, actualRisk, profitTarget: target3, profitTarget1_1: target1 }
         };
 
+        if (selectedStock) {
+            lastCalculation.stockCode = selectedStock.code;
+            lastCalculation.stockName = selectedStock.name;
+        }
+
         result1.innerHTML = `
-            <div class="result-item"><span class="result-label">${t('lblDirection')}</span><span class="result-value" style="color:${isLong?'#22c55e':'#ef4444'}">${directionLabel}</span></div>
+            <div class="result-item"><span class="result-label">${t('lblDirection')}</span><span class="result-value" style="color:${isLong ? '#22c55e' : '#ef4444'}">${directionLabel}</span></div>
             <div class="result-item"><span class="result-label">${t('resPositionSize')}</span><span class="result-value highlight">${shares} ${t('resShares')}</span></div>
             <div class="result-item"><span class="result-label">${t('resRiskAmount')}</span><span class="result-value">${formatNumber(actualRisk)}</span></div>
             <div style="border-top:1px solid #334; margin:8px 0"></div>
@@ -697,20 +703,57 @@ function calculatePosition() {
         `;
     }
     result1.classList.add('has-result');
-    
+
     // Auto save history
     saveHistory({ id: Date.now(), ...lastCalculation, timestamp: Date.now() });
+}
+
+let currentFilterUser = 'all';
+
+function filterPositions(user, btn) {
+    currentFilterUser = user;
+    // Update active tab UI
+    if (btn) {
+        document.querySelectorAll('.user-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    renderPositionsList();
 }
 
 function saveCalculationAsPosition() {
     if (!lastCalculation) return;
     const unit = lastCalculation.mode === 'stock' ? '股' : '手';
-    const name = lastCalculation.mode === 'stock' ? 'Stock' : (futuresData[lastCalculation.futuresProduct]?.name || lastCalculation.futuresProduct);
-    
+    let name = lastCalculation.futuresProduct;
+    if (lastCalculation.mode === 'stock') {
+        name = lastCalculation.stockName ? `${lastCalculation.stockName} (${lastCalculation.stockCode})` : 'Stock';
+    } else {
+        name = futuresData[lastCalculation.futuresProduct]?.name || lastCalculation.futuresProduct;
+    }
+
+    const results = lastCalculation.results || {};
+    const defaultQty = lastCalculation.mode === 'stock' ? (results.shares || '') : (results.contracts || '');
+
+    const userSelectHTML = `
+        <div class="modal-input-group">
+            <label class="modal-label">User</label>
+            <div style="display: flex; gap: 15px; margin-top: 5px;">
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="radio" name="posUser" value="liuan" checked> 刘安
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="radio" name="posUser" value="kangge"> 康哥
+                </label>
+            </div>
+        </div>
+    `;
+
     showModal(
         t('btnSavePosition'),
         `${name} @ ${lastCalculation.inputs.buyPrice}`,
-        `<div class="modal-input-group"><label class="modal-label">${t('lblQuantity')}</label><input id="posQty" class="modal-input" type="number" placeholder="${unit}"></div>`,
+        `
+        <div class="modal-input-group"><label class="modal-label">${t('lblQuantity')}</label><input id="posQty" class="modal-input" type="number" placeholder="${unit}" value="${defaultQty}"></div>
+        ${userSelectHTML}
+        `,
         [
             { label: 'Cancel', onclick: 'hideModal()' },
             { label: 'Save', primary: true, onclick: 'confirmSavePosition()' }
@@ -719,62 +762,79 @@ function saveCalculationAsPosition() {
 }
 
 function confirmSavePosition() {
-    if(!lastCalculation) return;
+    if (!lastCalculation) return;
     const qtyInput = document.getElementById('posQty');
     const qty = parseInt(qtyInput.value);
-    if(isNaN(qty) || qty<=0) return;
-    
+    if (isNaN(qty) || qty <= 0) return;
+
+    // Get selected user
+    const userRadios = document.getElementsByName('posUser');
+    let selectedUser = 'liuan'; // Default
+    for (const radio of userRadios) {
+        if (radio.checked) {
+            selectedUser = radio.value;
+            break;
+        }
+    }
+
     const pos = {
         id: Date.now(),
+        // ... existing properties
         mode: lastCalculation.mode,
         futuresProduct: lastCalculation.futuresProduct,
-        productName: lastCalculation.mode === 'stock' ? '股票' : (futuresData[lastCalculation.futuresProduct]?.name || lastCalculation.futuresProduct),
+        stockCode: lastCalculation.stockCode,
+        stockName: lastCalculation.stockName,
+        productName: lastCalculation.mode === 'stock' ? (lastCalculation.stockName || 'Stock') : (futuresData[lastCalculation.futuresProduct]?.name || lastCalculation.futuresProduct),
         buyPrice: lastCalculation.inputs.buyPrice,
         stopLoss: lastCalculation.inputs.stopLoss,
         targetPrice: lastCalculation.results.profitTarget,
         quantity: qty,
         status: 'open',
+        user: selectedUser, // Save User
         openTime: new Date().toISOString(),
         closeTime: null, closePrice: null, profit: null
     };
-    
+
     try {
         const list = getPositions();
         list.unshift(pos);
         localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(list));
         hideModal();
         showToast('Saved', 'success');
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 function switchMode(mode, btn) {
     currentMode = mode;
     document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    
-    const group = document.getElementById('futuresProductGroup');
-    if(group) group.style.display = mode === 'futures' ? 'block' : 'none';
-    
-    if(typeof calculatePosition === 'function') calculatePosition();
+
+    const futuresGroup = document.getElementById('futuresProductGroup');
+    const stockGroup = document.getElementById('stockProductGroup');
+
+    if (futuresGroup) futuresGroup.style.display = mode === 'futures' ? 'block' : 'none';
+    if (stockGroup) stockGroup.style.display = mode === 'stock' ? 'block' : 'none';
+
+    if (typeof calculatePosition === 'function') calculatePosition();
 }
 
 // ===== UI Logic =====
 function showModal(title, subtitle, body, actions) {
     const overlay = document.getElementById('modalOverlay');
-    if(!overlay) return;
+    if (!overlay) return;
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalSubtitle').textContent = subtitle;
     document.getElementById('modalBody').innerHTML = body;
-    document.getElementById('modalActions').innerHTML = actions.map(a => 
-        `<button class="modal-btn ${a.primary?'modal-btn-primary':'modal-btn-secondary'}" onclick="${a.onclick}">${a.label}</button>`
+    document.getElementById('modalActions').innerHTML = actions.map(a =>
+        `<button class="modal-btn ${a.primary ? 'modal-btn-primary' : 'modal-btn-secondary'}" onclick="${a.onclick}">${a.label}</button>`
     ).join('');
     overlay.classList.add('show');
 }
 function hideModal() {
     const overlay = document.getElementById('modalOverlay');
-    if(overlay) overlay.classList.remove('show');
+    if (overlay) overlay.classList.remove('show');
 }
-function showToast(msg, type='success') {
+function showToast(msg, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `<div class="toast-message">${msg}</div>`;
@@ -784,7 +844,7 @@ function showToast(msg, type='success') {
 
 // Global Reset
 function globalReset() {
-    if(confirm('Reset All Data?')) {
+    if (confirm('Reset All Data?')) {
         localStorage.clear();
         location.reload();
     }
@@ -792,24 +852,24 @@ function globalReset() {
 
 function initSearchableSelect(wrapperId) {
     const wrapper = document.getElementById(wrapperId);
-    if(!wrapper) return;
+    if (!wrapper) return;
     // ... Simplified init logic for futures select ...
-     const input = wrapper.querySelector('.search-input');
-     const dropdown = wrapper.querySelector('.options-dropdown');
-     const hidden = wrapper.querySelector('input[type=hidden]');
-     
-     // Build options
-     let html = '';
-     Object.values(futuresData).forEach(item => {
-         html += `<div class="option-item" onclick="selectFuture('${item.code}', '${wrapperId}')">${item.name} (${item.code})</div>`;
-     });
-     dropdown.innerHTML = html;
-     
-     input.addEventListener('focus', () => dropdown.classList.add('show'));
-     input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('show'), 200));
-     input.addEventListener('input', (e) => {
-         // simplified filtering check
-     });
+    const input = wrapper.querySelector('.search-input');
+    const dropdown = wrapper.querySelector('.options-dropdown');
+    const hidden = wrapper.querySelector('input[type=hidden]');
+
+    // Build options
+    let html = '';
+    Object.values(futuresData).forEach(item => {
+        html += `<div class="option-item" onclick="selectFuture('${item.code}', '${wrapperId}')">${item.name} (${item.code})</div>`;
+    });
+    dropdown.innerHTML = html;
+
+    input.addEventListener('focus', () => dropdown.classList.add('show'));
+    input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('show'), 200));
+    input.addEventListener('input', (e) => {
+        // simplified filtering check
+    });
 }
 
 function selectFuture(code, wrapperId) {
@@ -818,17 +878,75 @@ function selectFuture(code, wrapperId) {
     wrapper.querySelector('.search-input').value = item.name;
     const hidden = wrapper.querySelector('input[type=hidden]');
     hidden.value = code;
-    
+
     // Trigger logic
     selectedFuturesProduct = item;
-    if(typeof calculatePosition === 'function') calculatePosition();
+    if (typeof calculatePosition === 'function') calculatePosition();
+}
+
+function initStockSelect(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const input = wrapper.querySelector('.search-input');
+    const dropdown = wrapper.querySelector('.options-dropdown');
+    const hidden = wrapper.querySelector('input[type=hidden]');
+
+    function renderOptions(data) {
+        if (data.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">No results</div>';
+            return;
+        }
+        let html = '';
+        // Limit to 50 results for performance
+        data.slice(0, 50).forEach(item => {
+            html += `<div class="option-item" onclick="selectStock('${item.code}')">
+                <span class="stock-name">${item.name}</span>
+                <span class="stock-code">${item.code}</span>
+            </div>`;
+        });
+        dropdown.innerHTML = html;
+    }
+
+    renderOptions(stockList); // Initial render (full list or partial)
+
+    input.addEventListener('focus', () => dropdown.classList.add('show'));
+
+    // Delay blur to allow click
+    input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('show'), 200));
+
+    input.addEventListener('input', (e) => {
+        const val = e.target.value.toLowerCase().trim();
+        if (!val) {
+            renderOptions(stockList);
+            return;
+        }
+        const filtered = stockList.filter(item =>
+            item.code.includes(val) ||
+            item.name.includes(val) ||
+            (item.pinyin && item.pinyin.includes(val))
+        );
+        renderOptions(filtered);
+        dropdown.classList.add('show');
+    });
+}
+
+function selectStock(code) {
+    const item = stockList.find(s => s.code === code);
+    if (!item) return;
+
+    const wrapper = document.getElementById('stockSelect1');
+    wrapper.querySelector('.search-input').value = `${item.name} (${item.code})`;
+    document.getElementById('stockCode').value = code;
+    selectedStock = item;
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
     updateContent();
-    if(document.getElementById('futuresSelect1')) initSearchableSelect('futuresSelect1');
-    
+    if (document.getElementById('futuresSelect1')) initSearchableSelect('futuresSelect1');
+    if (document.getElementById('stockSelect1')) initStockSelect('stockSelect1');
+
     // Bind calculator events
     const buys = document.querySelectorAll('#buyPrice1, #stopLoss1, #riskAmount');
     buys.forEach(el => el.addEventListener('input', calculatePosition));

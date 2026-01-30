@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,13 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Mobile Navigation -->
     <div style="position: fixed; top: 10px; right: 10px; z-index: 10001; display: flex; gap: 10px;">
-        <button id="langToggle" onclick="toggleLanguage()" style="background: #3b82f6; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-            <span class="lang-text">EN/CN</span>
-        </button>
-        <button onclick="globalReset()" style="background: red; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+
+        <button onclick="globalReset()"
+            style="background: red; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             ⚠️ <span data-i18n="resetBtn">Reset</span>
         </button>
     </div>
@@ -43,8 +44,10 @@
                     </div>
 
                     <div class="mode-selector">
-                        <button class="mode-button active" onclick="switchMode('stock', this)" data-i18n="modeStock">Stock</button>
-                        <button class="mode-button" onclick="switchMode('futures', this)" data-i18n="modeFutures">Futures</button>
+                        <button class="mode-button active" onclick="switchMode('stock', this)"
+                            data-i18n="modeStock">Stock</button>
+                        <button class="mode-button" onclick="switchMode('futures', this)"
+                            data-i18n="modeFutures">Futures</button>
                     </div>
 
                     <div class="form-group" id="futuresProductGroup" style="display: none;">
@@ -52,9 +55,23 @@
                         <div class="input-wrapper">
                             <span class="input-prefix">📦</span>
                             <div class="custom-select-container" id="futuresSelect1">
-                                <input type="text" class="search-input" data-i18n-placeholder="phSearch" autocomplete="off">
+                                <input type="text" class="search-input" data-i18n-placeholder="phSearch"
+                                    autocomplete="off">
                                 <div class="options-dropdown"></div>
                                 <input type="hidden" id="futuresProduct">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="stockProductGroup">
+                        <label data-i18n="stockLabel">Stock</label>
+                        <div class="input-wrapper">
+                            <span class="input-prefix">🏢</span>
+                            <div class="custom-select-container" id="stockSelect1">
+                                <input type="text" class="search-input" data-i18n-placeholder="phStockSearch"
+                                    autocomplete="off">
+                                <div class="options-dropdown"></div>
+                                <input type="hidden" id="stockCode">
                             </div>
                         </div>
                     </div>
@@ -94,7 +111,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Modal & Toast Overlay -->
         <div id="modalOverlay" class="modal-overlay">
             <div class="modal-dialog">
@@ -110,6 +127,8 @@
         </footer>
     </div>
 
+    <script src="stocks_data.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
