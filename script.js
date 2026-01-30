@@ -34,10 +34,17 @@ const TRANSLATIONS = {
         lblTarget3: "3:1止盈",
         lblShares: "建议股数",
         lblContracts: "建议手数",
+        lblQuantity: "持仓", // Changed from implied default or let's see where it was. It wasn't in the snippet I saw earlier? 
+        // Wait, line 465 in snippet 430 uses `t('lblQuantity')`. 
+        // I need to find where `lblQuantity` is defined in dictionary.
+        // It's not in the snippet 428 lines 1-130. It must be missing or I missed it.
+        // It IS used in line 463 of `script.js` (snippet 430).
+        // Let's add it if missing or update it.
         lblOpened: "持仓中",
         lblClosed: "已平仓",
         actClose: "平仓",
         actDelete: "删除",
+        actEdit: "编辑", // Add this
         emptyHistory: "暂无计算记录",
         emptyPositions: "暂无持仓记录",
         emptyTip: "完成计算后点击\"保存为持仓\"按钮添加",
@@ -99,6 +106,7 @@ const TRANSLATIONS = {
         lblClosed: "Closed",
         actClose: "Close",
         actDelete: "Delete",
+        actEdit: "Edit",
         emptyHistory: "No History Records",
         emptyPositions: "No Positions",
         emptyTip: "Calculate and click Save to add",
@@ -433,6 +441,7 @@ function renderPositionsList() {
     }
 
     container.innerHTML = positions.map(pos => {
+        console.log('Rendering pos:', pos.id, pos.status);
         try {
             const isClosed = pos.status === 'closed';
             const profitClass = pos.profit > 0 ? 'positive' : pos.profit < 0 ? 'negative' : '';
@@ -460,6 +469,10 @@ function renderPositionsList() {
                             <span class="position-detail-value">${formatNumber(targetPrice)}</span>
                         </div>
                         <div class="position-detail-row">
+                            <span class="position-detail-label">${t('lblTarget1')}</span>
+                            <span class="position-detail-value">${formatNumber(pos.target1 || 0)}</span>
+                        </div>
+                        <div class="position-detail-row">
                             <span class="position-detail-label">${t('lblQuantity')}</span>
                             <span class="position-detail-value">${pos.quantity} ${unitSuffix}</span>
                         </div>
@@ -478,6 +491,7 @@ function renderPositionsList() {
                     <div class="position-actions">
                         ${!isClosed ? `
                             <button class="position-btn close-position-btn" onclick="closePosition(${pos.id})">${t('actClose')}</button>
+                            <button class="position-btn edit-position-btn" style="background:#ef4444; color:white; border:none;" onclick="editPosition(${pos.id})">${t('actEdit')}</button>
                         ` : ''}
                         <button class="position-btn delete-position-btn" onclick="deletePositionObj(${pos.id})">${t('actDelete')}</button>
                     </div>
@@ -495,6 +509,79 @@ function renderPositionsList() {
 
 // Renaming deletePosition to deletePositionObj to avoid naming conflict with history deletion if any
 // Actually, `deletePosition` was used in `script.js` before.
+
+function editPosition(id) {
+    const list = getPositions();
+    const pos = list.find(p => p.id === id);
+    if (!pos) return;
+
+    showModal(
+        t('actEdit'),
+        `${pos.productName}`,
+        `
+            <div class="modal-input-group">
+                <label class="modal-label">${t('lblBuy')}</label>
+                <input type="number" id="editBuyPrice" class="modal-input" value="${pos.buyPrice}" step="0.01">
+            </div>
+            <div class="modal-input-group">
+                <label class="modal-label">${t('lblQuantity')}</label>
+                <input type="number" id="editQuantity" class="modal-input" value="${pos.quantity}">
+            </div>
+        `,
+        [
+            { label: 'Cancel', onclick: 'hideModal()' },
+            { label: 'Save', primary: true, onclick: `confirmEditPosition(${id})` }
+        ]
+    );
+}
+
+function confirmEditPosition(id) {
+    try {
+        const newPrice = parseFloat(document.getElementById('editBuyPrice').value);
+        const newQty = parseInt(document.getElementById('editQuantity').value);
+
+        if (isNaN(newPrice) || newPrice < 0 || isNaN(newQty) || newQty <= 0) {
+            alert(t('msgFixInput'));
+            return;
+        }
+
+        let list = getPositions();
+        const index = list.findIndex(p => p.id === id);
+        if (index === -1) return;
+
+        // Update fields
+        list[index].buyPrice = newPrice;
+        list[index].quantity = newQty;
+
+        // Recalculate derivative values if needed (Risk, Targets)
+        // Note: Stop Loss is fixed amount or price? 
+        // If Stop Loss was a price, it stays same. 
+        // But Total Investment = Price * Qty changes.
+        // If we want to update targets based on new price? 
+        // Usually edits are for corrections. 
+        // Let's keep Stop Loss as is.
+        // But we should update Total Value display if we had it (we render it on fly?).
+        // In `renderPositionsList`:
+        // It shows Buy Price, Stop Loss, Target3, Target1, Quantity.
+        // Target1/3 were saved as absolute values in `confirmSavePosition`.
+        // If user changes Buy Price, Targets might need shift if they were relative?
+        // In `script.js` calculation:
+        // target1 = buy + (priceDiff * directionMultiplier);
+        // If user changes Buy Price, technically Targets should shift if the STRATEGY is relative.
+        // However, if user is just fixing a typo, maybe they want to fix it manually?
+        // For now, let's JUST update Price/Qty.
+        // User can delete and re-add if they want full recalc.
+        // OR: We can ask user? No, KISS. Just update data.
+
+        localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(list));
+        hideModal();
+        renderPositionsList();
+        showToast('Updated', 'success');
+    } catch (e) {
+        console.error(e);
+    }
+}
+
 function deletePositionObj(id) {
     showModal(
         '⚠️',
@@ -669,7 +756,10 @@ function calculatePosition() {
             <div class="result-item"><span class="result-label">${t('resTarget1')}</span><span class="result-value">${formatNumber(target1)}</span></div>
             <div class="result-item"><span class="result-label">${t('resTarget3')}</span><span class="result-value highlight">${formatNumber(target3)}</span></div>
             <div class="result-item"><span class="result-label">${t('resMargin')}</span><span class="result-value">${formatNumber(totalVal)}</span></div>
-            <button class="save-position-btn" onclick="saveCalculationAsPosition()">💾 ${t('btnSavePosition')}</button>
+            <div class="result-actions" style="display:flex; gap:10px; margin-top:10px;">
+                <button class="save-position-btn" style="flex:1;" onclick="manualSaveHistory()">📝 Record History</button>
+                <button class="save-position-btn" style="flex:1;" onclick="saveCalculationAsPosition()">💾 ${t('btnSavePosition')}</button>
+            </div>
         `;
 
     } else {
@@ -699,13 +789,21 @@ function calculatePosition() {
             <div class="result-item"><span class="result-label">${t('resTarget1')}</span><span class="result-value">${formatNumber(target1)}</span></div>
             <div class="result-item"><span class="result-label">${t('resTarget3')}</span><span class="result-value highlight">${formatNumber(target3)}</span></div>
              <div class="result-item"><span class="result-label">Total</span><span class="result-value">${formatNumber(totalVal)}</span></div>
-            <button class="save-position-btn" onclick="saveCalculationAsPosition()">💾 ${t('btnSavePosition')}</button>
+            <div class="result-actions" style="display:flex; gap:10px; margin-top:10px;">
+                <button class="save-position-btn" style="flex:1;" onclick="manualSaveHistory()">📝 Record History</button>
+                <button class="save-position-btn" style="flex:1;" onclick="saveCalculationAsPosition()">💾 ${t('btnSavePosition')}</button>
+            </div>
         `;
     }
     result1.classList.add('has-result');
 
-    // Auto save history
+    // Auto save history removed
+}
+
+function manualSaveHistory() {
+    if (!lastCalculation) return;
     saveHistory({ id: Date.now(), ...lastCalculation, timestamp: Date.now() });
+    showToast('History Saved', 'success');
 }
 
 let currentFilterUser = 'all';
@@ -714,7 +812,19 @@ function filterPositions(user, btn) {
     currentFilterUser = user;
     // Update active tab UI
     if (btn) {
-        document.querySelectorAll('.user-tab').forEach(b => b.classList.remove('active'));
+        // Only clear active from sibling mode-buttons in the user filter container
+        // To be safe and generic if used elsewhere, let's target the buttons in the parent
+        const parent = btn.parentElement;
+        if (parent) {
+            parent.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+        } else {
+            // Fallback if structure changes or strict selector needed
+            document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+            // Wait, this global selector might clear other mode buttons (like stock/futures toggles).
+            // The Stock/Futures toggle uses `switchMode` which targets `.mode-button`.
+            // `filterPositions` targeting all `.mode-button` would break the calc toggle if on same page (unlikely but possible).
+            // Better to scope it.
+        }
         btn.classList.add('active');
     }
     renderPositionsList();
@@ -788,6 +898,7 @@ function confirmSavePosition() {
         buyPrice: lastCalculation.inputs.buyPrice,
         stopLoss: lastCalculation.inputs.stopLoss,
         targetPrice: lastCalculation.results.profitTarget,
+        target1: lastCalculation.results.profitTarget1_1, // Add this
         quantity: qty,
         status: 'open',
         user: selectedUser, // Save User
@@ -806,8 +917,14 @@ function confirmSavePosition() {
 
 function switchMode(mode, btn) {
     currentMode = mode;
-    document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    // Update active tab UI
+    if (btn) {
+        const parent = btn.parentElement;
+        if (parent) {
+            parent.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+        }
+        btn.classList.add('active');
+    }
 
     const futuresGroup = document.getElementById('futuresProductGroup');
     const stockGroup = document.getElementById('stockProductGroup');
@@ -951,3 +1068,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const buys = document.querySelectorAll('#buyPrice1, #stopLoss1, #riskAmount');
     buys.forEach(el => el.addEventListener('input', calculatePosition));
 });
+
+function clearAllHistory() {
+    if (confirm('Delete All History?')) {
+        localStorage.removeItem(STORAGE_KEYS.HISTORY);
+        renderHistoryList();
+        showToast('History Cleared', 'success');
+    }
+}
