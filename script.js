@@ -985,7 +985,32 @@ function initSearchableSelect(wrapperId) {
     input.addEventListener('focus', () => dropdown.classList.add('show'));
     input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('show'), 200));
     input.addEventListener('input', (e) => {
-        // simplified filtering check
+        const val = e.target.value.toLowerCase().trim();
+        if (!val) {
+            // Show all options if input is empty
+            let html = '';
+            Object.values(futuresData).forEach(item => {
+                html += `<div class="option-item" onclick="selectFuture('${item.code}', '${wrapperId}')">${item.name} (${item.code})</div>`;
+            });
+            dropdown.innerHTML = html;
+            dropdown.classList.add('show');
+            return;
+        }
+        // Filter by name or code
+        const filtered = Object.values(futuresData).filter(item =>
+            item.name.toLowerCase().includes(val) ||
+            item.code.toLowerCase().includes(val)
+        );
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">无匹配结果</div>';
+        } else {
+            let html = '';
+            filtered.forEach(item => {
+                html += `<div class="option-item" onclick="selectFuture('${item.code}', '${wrapperId}')">${item.name} (${item.code})</div>`;
+            });
+            dropdown.innerHTML = html;
+        }
+        dropdown.classList.add('show');
     });
 }
 
