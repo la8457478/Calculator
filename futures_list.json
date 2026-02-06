@@ -1,0 +1,312 @@
+[
+    {
+        "name": "螺纹钢",
+        "code": "RB",
+        "display": "螺纹钢 (RB)"
+    },
+    {
+        "name": "热卷",
+        "code": "HC",
+        "display": "热卷 (HC)"
+    },
+    {
+        "name": "铁矿石",
+        "code": "I",
+        "display": "铁矿石 (I)"
+    },
+    {
+        "name": "焦炭",
+        "code": "J",
+        "display": "焦炭 (J)"
+    },
+    {
+        "name": "焦煤",
+        "code": "JM",
+        "display": "焦煤 (JM)"
+    },
+    {
+        "name": "硅铁",
+        "code": "SF",
+        "display": "硅铁 (SF)"
+    },
+    {
+        "name": "锰硅",
+        "code": "SM",
+        "display": "锰硅 (SM)"
+    },
+    {
+        "name": "线材",
+        "code": "WR",
+        "display": "线材 (WR)"
+    },
+    {
+        "name": "不锈钢",
+        "code": "SS",
+        "display": "不锈钢 (SS)"
+    },
+    {
+        "name": "碳酸锂",
+        "code": "LC",
+        "display": "碳酸锂 (LC)"
+    },
+    {
+        "name": "工业硅",
+        "code": "SI",
+        "display": "工业硅 (SI)"
+    },
+    {
+        "name": "原油",
+        "code": "SC",
+        "display": "原油 (SC)"
+    },
+    {
+        "name": "燃油",
+        "code": "FU",
+        "display": "燃油 (FU)"
+    },
+    {
+        "name": "低硫燃油",
+        "code": "LU",
+        "display": "低硫燃油 (LU)"
+    },
+    {
+        "name": "沥青",
+        "code": "BU",
+        "display": "沥青 (BU)"
+    },
+    {
+        "name": "橡胶",
+        "code": "RU",
+        "display": "橡胶 (RU)"
+    },
+    {
+        "name": "20号胶",
+        "code": "NR",
+        "display": "20号胶 (NR)"
+    },
+    {
+        "name": "合成橡胶",
+        "code": "BR",
+        "display": "合成橡胶 (BR)"
+    },
+    {
+        "name": "纸浆",
+        "code": "SP",
+        "display": "纸浆 (SP)"
+    },
+    {
+        "name": "塑料",
+        "code": "L",
+        "display": "塑料 (L)"
+    },
+    {
+        "name": "PVC",
+        "code": "V",
+        "display": "PVC (V)"
+    },
+    {
+        "name": "聚丙烯",
+        "code": "PP",
+        "display": "聚丙烯 (PP)"
+    },
+    {
+        "name": "苯乙烯",
+        "code": "EB",
+        "display": "苯乙烯 (EB)"
+    },
+    {
+        "name": "乙二醇",
+        "code": "EG",
+        "display": "乙二醇 (EG)"
+    },
+    {
+        "name": "甲醇",
+        "code": "MA",
+        "display": "甲醇 (MA)"
+    },
+    {
+        "name": "PTA",
+        "code": "TA",
+        "display": "PTA (TA)"
+    },
+    {
+        "name": "短纤",
+        "code": "PF",
+        "display": "短纤 (PF)"
+    },
+    {
+        "name": "对二甲苯",
+        "code": "PX",
+        "display": "对二甲苯 (PX)"
+    },
+    {
+        "name": "瓶片",
+        "code": "PR",
+        "display": "瓶片 (PR)"
+    },
+    {
+        "name": "烧碱",
+        "code": "SH",
+        "display": "烧碱 (SH)"
+    },
+    {
+        "name": "纯碱",
+        "code": "SA",
+        "display": "纯碱 (SA)"
+    },
+    {
+        "name": "玻璃",
+        "code": "FG",
+        "display": "玻璃 (FG)"
+    },
+    {
+        "name": "尿素",
+        "code": "UR",
+        "display": "尿素 (UR)"
+    },
+    {
+        "name": "LPG",
+        "code": "PG",
+        "display": "LPG (PG)"
+    },
+    {
+        "name": "豆粕",
+        "code": "M",
+        "display": "豆粕 (M)"
+    },
+    {
+        "name": "豆油",
+        "code": "Y",
+        "display": "豆油 (Y)"
+    },
+    {
+        "name": "棕榈油",
+        "code": "P",
+        "display": "棕榈油 (P)"
+    },
+    {
+        "name": "豆一",
+        "code": "A",
+        "display": "豆一 (A)"
+    },
+    {
+        "name": "豆二",
+        "code": "B",
+        "display": "豆二 (B)"
+    },
+    {
+        "name": "玉米",
+        "code": "C",
+        "display": "玉米 (C)"
+    },
+    {
+        "name": "淀粉",
+        "code": "CS",
+        "display": "淀粉 (CS)"
+    },
+    {
+        "name": "鸡蛋",
+        "code": "JD",
+        "display": "鸡蛋 (JD)"
+    },
+    {
+        "name": "生猪",
+        "code": "LH",
+        "display": "生猪 (LH)"
+    },
+    {
+        "name": "菜油",
+        "code": "OI",
+        "display": "菜油 (OI)"
+    },
+    {
+        "name": "菜粕",
+        "code": "RM",
+        "display": "菜粕 (RM)"
+    },
+    {
+        "name": "菜籽",
+        "code": "RS",
+        "display": "菜籽 (RS)"
+    },
+    {
+        "name": "花生",
+        "code": "PK",
+        "display": "花生 (PK)"
+    },
+    {
+        "name": "白糖",
+        "code": "SR",
+        "display": "白糖 (SR)"
+    },
+    {
+        "name": "棉花",
+        "code": "CF",
+        "display": "棉花 (CF)"
+    },
+    {
+        "name": "棉纱",
+        "code": "CY",
+        "display": "棉纱 (CY)"
+    },
+    {
+        "name": "苹果",
+        "code": "AP",
+        "display": "苹果 (AP)"
+    },
+    {
+        "name": "红枣",
+        "code": "CJ",
+        "display": "红枣 (CJ)"
+    },
+    {
+        "name": "粳米",
+        "code": "RR",
+        "display": "粳米 (RR)"
+    },
+    {
+        "name": "强麦",
+        "code": "WH",
+        "display": "强麦 (WH)"
+    },
+    {
+        "name": "普麦",
+        "code": "PM",
+        "display": "普麦 (PM)"
+    },
+    {
+        "name": "早籼稻",
+        "code": "RI",
+        "display": "早籼稻 (RI)"
+    },
+    {
+        "name": "晚籼稻",
+        "code": "LR",
+        "display": "晚籼稻 (LR)"
+    },
+    {
+        "name": "粳稻",
+        "code": "JR",
+        "display": "粳稻 (JR)"
+    },
+    {
+        "name": "胶合板",
+        "code": "BB",
+        "display": "胶合板 (BB)"
+    },
+    {
+        "name": "纤维板",
+        "code": "FB",
+        "display": "纤维板 (FB)"
+    },
+    {
+        "name": "动力煤",
+        "code": "ZC",
+        "display": "动力煤 (ZC)"
+    },
+    {
+        "name": "欧线集运",
+        "code": "EC",
+        "display": "欧线集运 (EC)"
+    }
+]

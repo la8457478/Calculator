@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期货行情 - Trading Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        /* Only showing styles relevant to the new chart feature + existing styles */
+        /* ... Existing Styles ... */
+        .futures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .futures-card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.05));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            /* Indicate clickable */
+        }
+
+        .futures-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color, #6366f1);
+        }
+
+        .futures-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .futures-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary, #fff);
+        }
+
+        .futures-code {
+            font-size: 0.85rem;
+            color: var(--text-secondary, #888);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .contracts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .contract-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .contract-box.main {
+            border-left: 3px solid #6366f1;
+        }
+
+        .contract-box.sub {
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .contract-box.disabled {
+            opacity: 0.5;
+        }
+
+        .contract-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary, #888);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contract-symbol {
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        .contract-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .kdj-mini {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .kdj-mini-item {
+            font-size: 0.8rem;
+        }
+
+        .kdj-k {
+            color: #f59e0b;
+        }
+
+        .kdj-d {
+            color: #3b82f6;
+        }
+
+        .kdj-j {
+            color: #a855f7;
+        }
+
+        .kdj-pattern {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .kdj-pattern.bullish {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .kdj-pattern.bearish {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .kdj-pattern.neutral {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+
+        .kdj-pattern.overbought {
+            background: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .kdj-pattern.oversold {
+            background: rgba(34, 197, 94, 0.3);
+            color: #86efac;
+        }
+
+        .update-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary, #888);
+            text-align: right;
+            margin-top: 12px;
+        }
+
+        /* Filter & Summary Styles */
+        .filter-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+            background: transparent;
+            color: var(--text-secondary, #888);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color, #6366f1);
+            color: white;
+            border-color: var(--primary-color, #6366f1);
+        }
+
+        .summary-bar {
+            display: flex;
+            gap: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary, #888);
+        }
+
+        .summary-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .summary-value.bullish {
+            color: #22c55e;
+        }
+
+        .summary-value.bearish {
+            color: #ef4444;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            margin: 5% auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 90%;
+            max-width: 1000px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+
+        #chartContainer {
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .chart-tab {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .chart-tab.active {
+            background: #6366f1;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Trading Calculator</h1>
+            <p class="subtitle">期货周线行情 & KDJ 指标（主力 + 次主力）</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <a href="index.html" class="tab-button" data-i18n="tabCalc">🖥️ Calculator</a>
+            <a href="history.html" class="tab-button" data-i18n="tabHistory">📝 History</a>
+            <a href="positions.html" class="tab-button" data-i18n="tabPositions">📊 Positions</a>
+            <a href="futures.html" class="tab-button active">📈 期货行情</a>
+        </div>
+
+        <!-- Futures Content -->
+        <div class="tab-content active" style="display: block;">
+            <!-- Summary Bar -->
+            <div class="summary-bar" id="summaryBar"></div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <button class="filter-btn active" onclick="filterFutures('all', this)">全部</button>
+                <button class="filter-btn" onclick="filterFutures('bullish', this)">多头排列</button>
+                <button class="filter-btn" onclick="filterFutures('bearish', this)">空头排列</button>
+                <button class="filter-btn" onclick="filterFutures('overbought', this)">超买区间</button>
+                <button class="filter-btn" onclick="filterFutures('oversold', this)">超卖区间</button>
+            </div>
+
+            <!-- Futures Grid -->
+            <div class="futures-grid" id="futuresGrid"></div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Trading Calculator</p>
+        </footer>
+    </div>
+
+    <!-- Chart Modal -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">K线图</span>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="chart-controls">
+                <div class="chart-tab active" id="btnMain" onclick="switchChartContract('main')">主力合约</div>
+                <div class="chart-tab" id="btnSub" onclick="switchChartContract('sub')">次主力合约</div>
+            </div>
+            <div id="chartContainer"></div>
+        </div>
+    </div>
+
+    <script src="futures_data.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let chartInstance = null;
+        let currentFutureCode = null;
+        let currentContractType = 'main'; // 'main' or 'sub'
+
+        document.addEventListener('DOMContentLoaded', function () {
+            renderSummary();
+            renderFuturesGrid();
+
+            // Window resize handle
+            window.addEventListener('resize', function () {
+                if (chartInstance) chartInstance.resize();
+            });
+
+            // Close modal on click outside
+            const modal = document.getElementById('chartModal');
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    closeModal();
+                }
+            }
+        });
+
+        function renderSummary() {
+            const summaryBar = document.getElementById('summaryBar');
+            if (typeof FUTURES_DATA === 'undefined' || !FUTURES_DATA) return;
+
+            let mainBullish = 0, mainBearish = 0;
+            let subBullish = 0, subBearish = 0;
+            let total = Object.keys(FUTURES_DATA).length;
+            let hasSubCount = 0;
+
+            Object.values(FUTURES_DATA).forEach(future => {
+                // 主力统计
+                if (future.main?.latestKDJ?.pattern) {
+                    if (future.main.latestKDJ.pattern.includes('多头')) mainBullish++;
+                    if (future.main.latestKDJ.pattern.includes('空头')) mainBearish++;
+                }
+                // 次主力统计
+                if (future.sub?.latestKDJ?.pattern) {
+                    hasSubCount++;
+                    if (future.sub.latestKDJ.pattern.includes('多头')) subBullish++;
+                    if (future.sub.latestKDJ.pattern.includes('空头')) subBearish++;
+                }
+            });
+
+            summaryBar.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-label">品种总数</span>
+                    <span class="summary-value">${total}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">主力多头</span>
+                    <span class="summary-value bullish">${mainBullish}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">主力空头</span>
+                    <span class="summary-value bearish">${mainBearish}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">次主力多头</span>
+                    <span class="summary-value bullish">${subBullish}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">次主力空头</span>
+                    <span class="summary-value bearish">${subBearish}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">有次主力</span>
+                    <span class="summary-value">${hasSubCount}/${total}</span>
+                </div>
+            `;
+        }
+
+        function filterFutures(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderFuturesGrid();
+        }
+
+        function getPatternClass(pattern) {
+            if (!pattern) return 'neutral';
+            if (pattern.includes('多头')) return 'bullish';
+            if (pattern.includes('空头')) return 'bearish';
+            if (pattern.includes('超买')) return 'overbought';
+            if (pattern.includes('超卖')) return 'oversold';
+            return 'neutral';
+        }
+
+        function renderContractBox(contract, type) {
+            if (!contract) {
+                return `
+                    <div class="contract-box ${type} disabled">
+                        <div class="contract-label">
+                            <span>${type === 'main' ? '主力合约' : '次主力合约'}</span>
+                        </div>
+                        <div class="no-data">暂无数据</div>
+                    </div>
+                `;
+            }
+
+            const latestData = contract.data[contract.data.length - 1];
+            const kdj = contract.latestKDJ;
+            const patternClass = getPatternClass(kdj?.pattern);
+
+            return `
+                <div class="contract-box ${type}">
+                    <div class="contract-label">
+                        <span>${type === 'main' ? '主力合约' : '次主力合约'}</span>
+                        <span class="contract-symbol">${contract.symbol}</span>
+                    </div>
+                    <div class="contract-price">${latestData.close.toFixed(1)}</div>
+                    <div class="kdj-mini">
+                        <span class="kdj-mini-item kdj-k">K: ${kdj.K.toFixed(1)}</span>
+                        <span class="kdj-mini-item kdj-d">D: ${kdj.D.toFixed(1)}</span>
+                        <span class="kdj-mini-item kdj-j">J: ${kdj.J.toFixed(1)}</span>
+                    </div>
+                    <span class="kdj-pattern ${patternClass}">${kdj.pattern}</span>
+                </div>
+            `;
+        }
+
+        function renderFuturesGrid() {
+            const grid = document.getElementById('futuresGrid');
+            if (typeof FUTURES_DATA === 'undefined' || !FUTURES_DATA) {
+                grid.innerHTML = '<p class="no-data">无数据，请运行 fetch_futures.py 获取数据</p>';
+                return;
+            }
+
+            let futures = Object.values(FUTURES_DATA);
+
+            // 应用筛选（基于主力合约）
+            if (currentFilter !== 'all') {
+                futures = futures.filter(f => {
+                    const pattern = f.main?.latestKDJ?.pattern || '';
+                    switch (currentFilter) {
+                        case 'bullish': return pattern.includes('多头');
+                        case 'bearish': return pattern.includes('空头');
+                        case 'overbought': return pattern.includes('超买');
+                        case 'oversold': return pattern.includes('超卖');
+                        default: return true;
+                    }
+                });
+            }
+
+            if (futures.length === 0) {
+                grid.innerHTML = '<p class="no-data">无匹配的期货品种</p>';
+                return;
+            }
+
+            grid.innerHTML = futures.map(future => {
+                const updateTime = future.main?.lastUpdate || future.sub?.lastUpdate || '';
+
+                return `
+                    <div class="futures-card" onclick="openChart('${future.code}')">
+                        <div class="futures-card-header">
+                            <span class="futures-name">${future.name}</span>
+                            <span class="futures-code">${future.code}</span>
+                        </div>
+                        <div class="contracts-container">
+                            ${renderContractBox(future.main, 'main')}
+                            ${renderContractBox(future.sub, 'sub')}
+                        </div>
+                        <div class="update-time">更新: ${updateTime} <span style="margin-left:8px; color:#6366f1;">📉 点击查看周线图</span></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ================= Chart Functions =================
+
+        function openChart(code) {
+            currentFutureCode = code;
+            currentContractType = 'main'; // Reset to main contract
+
+            const future = FUTURES_DATA[code];
+            if (!future) return;
+
+            // Update UI buttons
+            const btnMain = document.getElementById('btnMain');
+            const btnSub = document.getElementById('btnSub');
+
+            btnMain.style.display = future.main ? 'block' : 'none';
+            btnSub.style.display = future.sub ? 'block' : 'none';
+
+            if (!future.main && future.sub) currentContractType = 'sub';
+
+            updateChartUI();
+
+            document.getElementById('chartModal').style.display = 'block';
+
+            // Initialize chart if needed
+            if (!chartInstance) {
+                chartInstance = echarts.init(document.getElementById('chartContainer'));
+            }
+
+            renderChart();
+        }
+
+        function closeModal() {
+            document.getElementById('chartModal').style.display = 'none';
+        }
+
+        function switchChartContract(type) {
+            currentContractType = type;
+            updateChartUI();
+            renderChart();
+        }
+
+        function updateChartUI() {
+            document.getElementById('btnMain').className = `chart-tab ${currentContractType === 'main' ? 'active' : ''}`;
+            document.getElementById('btnSub').className = `chart-tab ${currentContractType === 'sub' ? 'active' : ''}`;
+        }
+
+        function renderChart() {
+            if (!currentFutureCode || !chartInstance) return;
+
+            const future = FUTURES_DATA[currentFutureCode];
+            const contract = future[currentContractType];
+
+            if (!contract || !contract.data || contract.data.length === 0) {
+                chartInstance.clear();
+                return;
+            }
+
+            document.getElementById('modalTitle').innerText = `${future.name} - ${contract.symbol} (周线)`;
+
+            // Prepare Data
+            const dates = contract.data.map(item => item.date);
+            const ohlc = contract.data.map(item => [item.open, item.close, item.low, item.high]);
+            const k = contract.data.map(item => item.K);
+            const d = contract.data.map(item => item.D);
+            const j = contract.data.map(item => item.J);
+
+            const option = {
+                backgroundColor: '#1e1e1e',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' }
+                },
+                grid: [
+                    { left: '3%', right: '3%', height: '55%', top: '5%' },
+                    { left: '3%', right: '3%', top: '65%', height: '30%' }
+                ],
+                xAxis: [
+                    {
+                        type: 'category',
+                        data: dates,
+                        scale: true,
+                        boundaryGap: true,
+                        axisLine: { onZero: false },
+                        splitLine: { show: false },
+                        min: 'dataMin',
+                        max: 'dataMax'
+                    },
+                    {
+                        type: 'category',
+                        gridIndex: 1,
+                        data: dates,
+                        scale: true,
+                        boundaryGap: true,
+                        axisLine: { onZero: false },
+                        axisTick: { show: false },
+                        splitLine: { show: false },
+                        axisLabel: { show: false }
+                    }
+                ],
+                yAxis: [
+                    {
+                        scale: true,
+                        splitArea: { show: true, areaStyle: { color: ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.05)'] } },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+                    },
+                    {
+                        scale: true,
+                        gridIndex: 1,
+                        splitNumber: 2,
+                        axisLabel: { show: false },
+                        axisLine: { show: false },
+                        axisTick: { show: false },
+                        splitLine: { show: false }
+                    }
+                ],
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 },
+                    { show: true, xAxisIndex: [0, 1], type: 'slider', bottom: 10, start: 0, end: 100, textStyle: { color: '#888' } }
+                ],
+                series: [
+                    {
+                        name: 'K线',
+                        type: 'candlestick',
+                        data: ohlc,
+                        itemStyle: {
+                            color: '#ef4444',
+                            color0: '#22c55e',
+                            borderColor: '#ef4444',
+                            borderColor0: '#22c55e'
+                        }
+                    },
+                    {
+                        name: 'K',
+                        type: 'line',
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        data: k,
+                        itemStyle: { color: '#f59e0b' },
+                        symbol: 'none',
+                        lineStyle: { width: 1 }
+                    },
+                    {
+                        name: 'D',
+                        type: 'line',
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        data: d,
+                        itemStyle: { color: '#3b82f6' },
+                        symbol: 'none',
+                        lineStyle: { width: 1 }
+                    },
+                    {
+                        name: 'J',
+                        type: 'line',
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        data: j,
+                        itemStyle: { color: '#a855f7' },
+                        symbol: 'none',
+                        lineStyle: { width: 1 }
+                    }
+                ]
+            };
+
+            chartInstance.setOption(option);
+        }
+    </script>
+</body>
+
+</html>

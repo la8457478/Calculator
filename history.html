@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,13 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Mobile Navigation -->
     <div style="position: fixed; top: 10px; right: 10px; z-index: 10001; display: flex; gap: 10px;">
-        <button id="langToggle" onclick="toggleLanguage()" style="background: #3b82f6; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+        <button id="langToggle" onclick="toggleLanguage()"
+            style="background: #3b82f6; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             <span class="lang-text">EN/CN</span>
         </button>
-        <button onclick="globalReset()" style="background: red; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+        <button onclick="globalReset()"
+            style="background: red; color: white; border: 2px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             ⚠️ <span data-i18n="resetBtn">Reset</span>
         </button>
     </div>
@@ -31,6 +35,7 @@
             <a href="index.html" class="tab-button" data-i18n="tabCalc">🖥️ Calculator</a>
             <a href="history.html" class="tab-button active" data-i18n="tabHistory">📝 History</a>
             <a href="positions.html" class="tab-button" data-i18n="tabPositions">📊 Positions</a>
+            <a href="futures.html" class="tab-button">📈 期货行情</a>
         </div>
 
         <!-- History Content -->
@@ -43,7 +48,7 @@
                 <!-- Content Rendered by JS -->
             </div>
         </div>
-        
+
         <!-- Modal & Toast Overlay -->
         <div id="modalOverlay" class="modal-overlay">
             <div class="modal-dialog">
@@ -62,9 +67,10 @@
     <script src="script.js"></script>
     <script>
         // Force render on load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             renderHistoryList();
         });
     </script>
 </body>
+
 </html>
