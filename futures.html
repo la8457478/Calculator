@@ -161,6 +161,50 @@
             color: #86efac;
         }
 
+        .rule-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+
+        .rule-tag.long {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+
+        .rule-tag.short {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .rule-tag.pending_long {
+            background: rgba(251, 191, 36, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+
+        .rule-tag.pending_short {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+            border: 1px solid #9ca3af;
+        }
+
+        /* Pending Highlight (Red Box) */
+        .contract-box.pending-highlight {
+            border: 2px solid #ef4444 !important;
+            background: rgba(239, 68, 68, 0.05);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+            position: relative;
+        }
+
+        /* Optional: Add a small corner label or indicator if needed, but user wanted minimal text */
+
         .update-time {
             font-size: 0.7rem;
             color: var(--text-secondary, #888);
@@ -342,8 +386,10 @@
                 <button class="filter-btn active" onclick="filterFutures('all', this)">全部</button>
                 <button class="filter-btn" onclick="filterFutures('bullish', this)">多头排列</button>
                 <button class="filter-btn" onclick="filterFutures('bearish', this)">空头排列</button>
-                <button class="filter-btn" onclick="filterFutures('overbought', this)">超买区间</button>
-                <button class="filter-btn" onclick="filterFutures('oversold', this)">超卖区间</button>
+                <button class="filter-btn" onclick="filterFutures('pattern1', this)">Strategy 1: Reversal</button>
+                <button class="filter-btn" onclick="filterFutures('pattern2', this)">S2: Breakout (Active)</button>
+                <button class="filter-btn" onclick="filterFutures('pattern2_pending', this)">S2: Setup
+                    (Pending)</button>
             </div>
 
             <!-- Futures Grid -->
@@ -477,9 +523,32 @@
             const latestData = contract.data[contract.data.length - 1];
             const kdj = contract.latestKDJ;
             const patternClass = getPatternClass(kdj?.pattern);
+            let isPending = false;
+
+            // Generate Rule Tags
+            let ruleTags = '';
+            if (kdj.custom_rule_1) {
+                const label = kdj.custom_rule_1 === 'long' ? 'S1:复苏' : 'S1:转弱';
+                const cls = kdj.custom_rule_1;
+                ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
+            }
+            if (kdj.custom_rule_2) {
+                if (kdj.custom_rule_2.includes('pending')) {
+                    isPending = true;
+                } else {
+                    let label = '';
+                    if (kdj.custom_rule_2 === 'long') label = 'S2:突破';
+                    else if (kdj.custom_rule_2 === 'short') label = 'S2:破位';
+
+                    if (label) {
+                        const cls = kdj.custom_rule_2;
+                        ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
+                    }
+                }
+            }
 
             return `
-                <div class="contract-box ${type}">
+                <div class="contract-box ${type} ${isPending ? "pending-highlight" : ""}"> 
                     <div class="contract-label">
                         <span>${type === 'main' ? '主力合约' : '次主力合约'}</span>
                         <span class="contract-symbol">${contract.symbol}</span>
@@ -491,6 +560,7 @@
                         <span class="kdj-mini-item kdj-j">J: ${kdj.J.toFixed(1)}</span>
                     </div>
                     <span class="kdj-pattern ${patternClass}">${kdj.pattern}</span>
+                    <div style="margin-top:4px;">${ruleTags}</div>
                 </div>
             `;
         }
@@ -511,12 +581,22 @@
                     switch (currentFilter) {
                         case 'bullish': return pattern.includes('多头');
                         case 'bearish': return pattern.includes('空头');
-                        case 'overbought': return pattern.includes('超买');
-                        case 'oversold': return pattern.includes('超卖');
+                        case 'pattern1': return (f.main?.latestKDJ?.custom_rule_1 != null || f.sub?.latestKDJ?.custom_rule_1 != null);
+                        case 'pattern2': return (['long', 'short'].includes(f.main?.latestKDJ?.custom_rule_2) || ['long', 'short'].includes(f.sub?.latestKDJ?.custom_rule_2));
+                        case 'pattern2_pending': return (f.main?.latestKDJ?.custom_rule_2?.includes('pending') || f.sub?.latestKDJ?.custom_rule_2?.includes('pending'));
                         default: return true;
                     }
                 });
             }
+
+            // 排序: 将 Pending (蓄势) 状态的商品排在最前面
+            futures.sort((a, b) => {
+                const isPendingA = (a.main?.latestKDJ?.custom_rule_2 || '').includes('pending') || (a.sub?.latestKDJ?.custom_rule_2 || '').includes('pending');
+                const isPendingB = (b.main?.latestKDJ?.custom_rule_2 || '').includes('pending') || (b.sub?.latestKDJ?.custom_rule_2 || '').includes('pending');
+                if (isPendingA && !isPendingB) return -1;
+                if (!isPendingA && isPendingB) return 1;
+                return 0; // 保持原有顺序
+            });
 
             if (futures.length === 0) {
                 grid.innerHTML = '<p class="no-data">无匹配的期货品种</p>';

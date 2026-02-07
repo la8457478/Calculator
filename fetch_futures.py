@@ -166,6 +166,90 @@ def daily_to_weekly(df):
     return weekly
 
 
+def check_rules(df, current_kdj):
+    """
+    检查是否符合自定义交易规则
+    df: 周线数据 DataFrame (包含 K, D, J)
+    current_kdj: 最新 KDJ 数据字典
+    返回: (pattern_1_status, pattern_2_status)
+    """
+    if len(df) < 3:
+        return None, None
+
+    # 获取最后3周的数据 (改为3根K线)
+    # w3: 本周 (Current)
+    # w2: 上周 (Peak/Trough)  
+    # w1: 前周 (Start)
+    w3 = df.iloc[-1]
+    w2 = df.iloc[-2]
+    w1 = df.iloc[-3]
+
+    # 规则1：复苏/转弱 (S1)
+    p1_status = None
+    is_k_gt_d = current_kdj['K'] > current_kdj['D']
+    is_k_lt_d = current_kdj['K'] < current_kdj['D']
+    
+    # S1 Long (复苏):
+    # 原逻辑: w1 > w2 (Highs Descending), KDJ Gold.
+    # W2, W3, W4 (Last 3). 
+    # User said: "W1 > W2 (Descending) + Gold Cross". 
+    # Let's use w3 and w2.
+    if (w2['high'] > w3['high']) and is_k_gt_d:
+        p1_status = 'long'
+    # S1 Short (转弱):
+    elif (w1['high'] > w2['high']) and (w2['high'] > w3['high']) and is_k_lt_d:
+        p1_status = 'short'
+
+    # 规则2：3根K线 Pending形态 (菜油类型)
+    p2_status = None
+    
+    # Pattern 2 Long (Pending Setup - 3-Bar):
+    # 核心逻辑:
+    # 1. w2是一个显著的上涨K线 (Peak)
+    # 2. w3回调但未跌破w1的低点 (Support holds)
+    # 3. w3收盘未突破w2的高点 (Pending breakout)
+    # 4. w3的高点低于w2 (确保w3是回调而非继续上涨)
+    
+    # 做多Pending (3-Bar):
+    # 1. w2.high > w1.high (有明显的上涨)
+    # 2. w3.close > w1.low (未跌破起点支撑)
+    # 3. w3.close <= w2.high (尚未突破高点)
+    # 4. w3.high < w2.high (w3确实是回调)
+    cond_pending_long = (w2['high'] > w1['high']) and \
+                        (w3['close'] > w1['low']) and \
+                        (w3['close'] <= w2['high']) and \
+                        (w3['high'] < w2['high'])
+    
+    # 做多Active (已突破):
+    cond_active_long = (w2['high'] > w1['high']) and \
+                       (w3['close'] > w2['high'])
+    
+    # 做空Pending (3-Bar):
+    # 1. w2.low < w1.low (有明显的下跌)
+    # 2. w3.close < w1.high (未突破起点阻力)
+    # 3. w3.close >= w2.low (尚未跌破低点)
+    # 4. w3.low > w2.low (w3确实是反弹)
+    cond_pending_short = (w2['low'] < w1['low']) and \
+                         (w3['close'] < w1['high']) and \
+                         (w3['close'] >= w2['low']) and \
+                         (w3['low'] > w2['low'])
+    
+    # 做空Active (已破位):
+    cond_active_short = (w2['low'] < w1['low']) and \
+                        (w3['close'] < w2['low'])
+    
+    if cond_active_long:
+        p2_status = 'long'
+    elif cond_pending_long:
+        p2_status = 'pending_long'
+    elif cond_active_short:
+        p2_status = 'short'
+    elif cond_pending_short:
+        p2_status = 'pending_short'
+        
+    return p1_status, p2_status
+
+
 def fetch_contract_data(symbol, contract_type="主力"):
     """
     获取单个合约的周线数据和 KDJ 指标
@@ -185,11 +269,22 @@ def fetch_contract_data(symbol, contract_type="主力"):
         if weekly_df.empty:
             return None
         
+        # 计算 KDJ
         weekly_df = calculate_kdj(weekly_df)
         
-        latest = weekly_df.iloc[-1]
-        kdj_pattern = analyze_kdj_pattern(latest['K'], latest['D'], latest['J'])
-        
+        # 获取最新KDJ数据
+        latest_kdj = {
+            'K': weekly_df.iloc[-1]['K'],
+            'D': weekly_df.iloc[-1]['D'],
+            'J': weekly_df.iloc[-1]['J'],
+            'pattern': analyze_kdj_pattern(weekly_df.iloc[-1]['K'], weekly_df.iloc[-1]['D'], weekly_df.iloc[-1]['J'])
+        }
+
+        # 检查自定义规则
+        p1, p2 = check_rules(weekly_df, latest_kdj)
+        latest_kdj['custom_rule_1'] = p1  # 'long' or 'short' or None
+        latest_kdj['custom_rule_2'] = p2  # 'long' or 'short' or None
+
         records = []
         for _, row in weekly_df.iterrows():
             records.append({
@@ -208,12 +303,7 @@ def fetch_contract_data(symbol, contract_type="主力"):
             "symbol": symbol,
             "contractType": contract_type,
             "lastUpdate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "latestKDJ": {
-                "K": float(latest['K']),
-                "D": float(latest['D']),
-                "J": float(latest['J']),
-                "pattern": kdj_pattern
-            },
+            "latestKDJ": latest_kdj,
             "data": records
         }
         
@@ -285,6 +375,11 @@ def fetch_futures_data():
         }
         
         time.sleep(0.5)  # 避免请求过快
+        
+        # 每3个品种保存一次
+        if i % 3 == 0:
+            save_to_js(all_data)
+            print("  (自动保存进度)")
     
     return all_data
 
