@@ -24,7 +24,17 @@ for code, info in data.items():
         kdj = main['latestKDJ']
         rule2 = kdj.get('custom_rule_2')
         
+        # 新增：检查KDJ金叉/死叉条件
+        k = kdj.get('K', 0)
+        d = kdj.get('D', 0)
+        
         if rule2 and 'pending' in rule2:
+            # 做多必须金叉(K>D)，做空必须死叉(K<D)
+            if rule2 == 'pending_long' and k <= d:
+                continue  # 做多但未金叉，跳过
+            if rule2 == 'pending_short' and k >= d:
+                continue  # 做空但未死叉，跳过
+            
             # 计算突破价和止损价
             data_list = main.get('data', [])
             if len(data_list) >= 2:
@@ -63,7 +73,17 @@ for code, info in data.items():
         kdj = sub['latestKDJ']
         rule2 = kdj.get('custom_rule_2')
         
+        # 新增：检查KDJ金叉/死叉条件
+        k = kdj.get('K', 0)
+        d = kdj.get('D', 0)
+        
         if rule2 and 'pending' in rule2:
+            # 做多必须金叉(K>D)，做空必须死叉(K<D)
+            if rule2 == 'pending_long' and k <= d:
+                continue  # 做多但未金叉，跳过
+            if rule2 == 'pending_short' and k >= d:
+                continue  # 做空但未死叉，跳过
+            
             data_list = sub.get('data', [])
             if len(data_list) >= 2:
                 w2 = data_list[-2]

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>测试筛选逻辑</title>
+</head>
+
+<body>
+    <h1>测试KDJ筛选逻辑</h1>
+    <div id="result"></div>
+
+    <script src="futures_data.js"></script>
+    <script>
+        // 测试筛选逻辑
+        const testFilter = () => {
+            const checkPending = (contract) => {
+                if (!contract?.latestKDJ?.custom_rule_2) return false;
+                const rule = contract.latestKDJ.custom_rule_2;
+                if (!rule.includes('pending')) return false;
+
+                const k = contract.latestKDJ.K;
+                const d = contract.latestKDJ.D;
+
+                // 做多蓄势必须金叉(K>D)，做空蓄势必须死叉(K<D)
+                if (rule === 'pending_long') return k > d;
+                if (rule === 'pending_short') return k < d;
+                return false;
+            };
+
+            let futures = Object.values(FUTURES_DATA);
+
+            // 应用蓄势筛选
+            const filtered = futures.filter(f => {
+                return checkPending(f.main) || checkPending(f.sub);
+            });
+
+            const result = document.getElementById('result');
+            result.innerHTML = `
+        <h2>筛选结果：</h2>
+        <p>总品种数：${futures.length}</p>
+        <p>蓄势品种数（新规则）：${filtered.length}</p>
+        <h3>蓄势品种列表：</h3>
+        <ul>
+            ${filtered.map(f => {
+                const mainPending = checkPending(f.main);
+                const subPending = checkPending(f.sub);
+                return `<li>${f.name} (${f.code}) - 
+                    ${mainPending ? '主力✓' : ''} 
+                    ${subPending ? '次主力✓' : ''}
+                </li>`;
+            }).join('')}
+        </ul>
+        
+        <h3>检查锰硅和焦炭：</h3>
+        <ul>
+            <li>锰硅 (SM): ${filtered.find(f => f.code === 'SM') ? '在列表中❌' : '已过滤✓'}</li>
+            <li>焦炭 (J): ${filtered.find(f => f.code === 'J') ? '在列表中❌' : '已过滤✓'}</li>
+        </ul>
+    `;
+        };
+
+        // 执行测试
+        if (typeof FUTURES_DATA !== 'undefined') {
+            testFilter();
+        } else {
+            document.getElementById('result').innerHTML = '<p style="color:red;">错误：无法加载 FUTURES_DATA</p>';
+        }
+    </script>
+</body>
+
+</html>

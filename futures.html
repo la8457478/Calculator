@@ -518,25 +518,54 @@
 
             const latestData = contract.data[contract.data.length - 1];
             const kdj = contract.latestKDJ;
-            const patternClass = getPatternClass(kdj?.pattern);
-            let isPending = false;
 
-            // Generate Rule Tags
+            // 更新：蓄势判断需要验证KDJ金叉/死叉
+            let isPending = false;
+            if (kdj.custom_rule_2?.includes('pending')) {
+                const k = kdj.K;
+                const d = kdj.D;
+                // 做多蓄势必须金叉，做空蓄势必须死叉
+                if (kdj.custom_rule_2 === 'pending_long' && k > d) {
+                    isPending = true;
+                } else if (kdj.custom_rule_2 === 'pending_short' && k < d) {
+                    isPending = true;
+                }
+            }
+
+            let patternClass = '';
+            if (kdj.pattern.includes('多头')) patternClass = 'bullish';
+            else if (kdj.pattern.includes('空头')) patternClass = 'bearish';
+
+            // Rule tags
             let ruleTags = '';
             if (kdj.custom_rule_1) {
-                const label = kdj.custom_rule_1 === 'long' ? 'S1:复苏' : 'S1:转弱';
-                const cls = kdj.custom_rule_1;
-                ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
+                const r1Map = {
+                    'long': 'S1: 复苏',
+                    'short': 'S1: 转弱'
+                };
+                const label = r1Map[kdj.custom_rule_1] || kdj.custom_rule_1;
+                if (label) {
+                    const cls = kdj.custom_rule_1;
+                    ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
+                }
             }
-            if (kdj.custom_rule_2) {
-                if (kdj.custom_rule_2.includes('pending')) {
-                    isPending = true;
-                } else {
-                    let label = '';
-                    if (kdj.custom_rule_2 === 'long') label = 'S2:突破';
-                    else if (kdj.custom_rule_2 === 'short') label = 'S2:破位';
 
-                    if (label) {
+            if (kdj.custom_rule_2) {
+                const r2Map = {
+                    'long': 'S2: 突破',
+                    'short': 'S2: 破位',
+                    'pending_long': 'S2: 蓄势',
+                    'pending_short': 'S2: 蓄势'
+                };
+                const label = r2Map[kdj.custom_rule_2] || kdj.custom_rule_2;
+                if (label) {
+                    // 只有通过KDJ验证的pending才显示标签
+                    if (kdj.custom_rule_2.includes('pending')) {
+                        if (isPending) {  // 只有isPending为true才显示
+                            const cls = kdj.custom_rule_2;
+                            ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
+                        }
+                    } else {
                         const cls = kdj.custom_rule_2;
                         ruleTags += `<span class="rule-tag ${cls}">${label}</span>`;
                     }
@@ -680,7 +709,22 @@
                         case 'bearish': return pattern.includes('空头');
                         case 'pattern1': return (f.main?.latestKDJ?.custom_rule_1 != null || f.sub?.latestKDJ?.custom_rule_1 != null);
                         case 'pattern2': return (['long', 'short'].includes(f.main?.latestKDJ?.custom_rule_2) || ['long', 'short'].includes(f.sub?.latestKDJ?.custom_rule_2));
-                        case 'pattern2_pending': return (f.main?.latestKDJ?.custom_rule_2?.includes('pending') || f.sub?.latestKDJ?.custom_rule_2?.includes('pending'));
+                        case 'pattern2_pending':
+                            // 新规则：蓄势必须验证KDJ金叉/死叉
+                            const checkPending = (contract) => {
+                                if (!contract?.latestKDJ?.custom_rule_2) return false;
+                                const rule = contract.latestKDJ.custom_rule_2;
+                                if (!rule.includes('pending')) return false;
+
+                                const k = contract.latestKDJ.K;
+                                const d = contract.latestKDJ.D;
+
+                                // 做多蓄势必须金叉(K>D)，做空蓄势必须死叉(K<D)
+                                if (rule === 'pending_long') return k > d;
+                                if (rule === 'pending_short') return k < d;
+                                return false;
+                            };
+                            return checkPending(f.main) || checkPending(f.sub);
                         default: return true;
                     }
                 });

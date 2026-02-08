@@ -201,6 +201,7 @@ def check_rules(df, current_kdj):
         p1_status = 'short'
 
     # 规则2：3根K线 Pending形态 (菜油类型)
+    # 新增条件：做多必须KDJ金叉(K>D)，做空必须KDJ死叉(K<D)
     p2_status = None
     
     # Pattern 2 Long (Pending Setup - 3-Bar):
@@ -209,34 +210,43 @@ def check_rules(df, current_kdj):
     # 2. w3回调但未跌破w1的低点 (Support holds)
     # 3. w3收盘未突破w2的高点 (Pending breakout)
     # 4. w3的高点低于w2 (确保w3是回调而非继续上涨)
+    # 5. KDJ已经金叉 (K > D) - 新增条件
     
     # 做多Pending (3-Bar):
     # 1. w2.high > w1.high (有明显的上涨)
     # 2. w3.close > w1.low (未跌破起点支撑)
     # 3. w3.close <= w2.high (尚未突破高点)
     # 4. w3.high < w2.high (w3确实是回调)
+    # 5. K > D (KDJ金叉) - 新增
     cond_pending_long = (w2['high'] > w1['high']) and \
                         (w3['close'] > w1['low']) and \
                         (w3['close'] <= w2['high']) and \
-                        (w3['high'] < w2['high'])
+                        (w3['high'] < w2['high']) and \
+                        is_k_gt_d  # 新增：必须金叉
     
     # 做多Active (已突破):
+    # 同样要求KDJ金叉
     cond_active_long = (w2['high'] > w1['high']) and \
-                       (w3['close'] > w2['high'])
+                       (w3['close'] > w2['high']) and \
+                       is_k_gt_d  # 新增：必须金叉
     
     # 做空Pending (3-Bar):
     # 1. w2.low < w1.low (有明显的下跌)
     # 2. w3.close < w1.high (未突破起点阻力)
     # 3. w3.close >= w2.low (尚未跌破低点)
     # 4. w3.low > w2.low (w3确实是反弹)
+    # 5. K < D (KDJ死叉) - 新增
     cond_pending_short = (w2['low'] < w1['low']) and \
                          (w3['close'] < w1['high']) and \
                          (w3['close'] >= w2['low']) and \
-                         (w3['low'] > w2['low'])
+                         (w3['low'] > w2['low']) and \
+                         is_k_lt_d  # 新增：必须死叉
     
     # 做空Active (已破位):
+    # 同样要求KDJ死叉
     cond_active_short = (w2['low'] < w1['low']) and \
-                        (w3['close'] < w2['low'])
+                        (w3['close'] < w2['low']) and \
+                        is_k_lt_d  # 新增：必须死叉
     
     if cond_active_long:
         p2_status = 'long'
