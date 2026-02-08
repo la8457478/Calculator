@@ -416,6 +416,7 @@
         </div>
     </div>
 
+    <script src="futures_specs.js"></script>
     <script src="futures_data.js"></script>
     <script>
         let currentFilter = 'all';
@@ -508,7 +509,7 @@
             return 'neutral';
         }
 
-        function renderContractBox(contract, type) {
+        function renderContractBox(contract, type, futureCode) {
             if (!contract) {
                 return `
                     <div class="contract-box ${type} disabled">
@@ -547,6 +548,47 @@
                 }
             }
 
+            let pendingInfo = '';
+            if (isPending && contract.data.length >= 2) {
+                const w2 = contract.data[contract.data.length - 2];
+                const w3 = contract.data[contract.data.length - 1]; // latestData
+                let breakoutPrice, stopPrice, typeLabel;
+
+                if (kdj.custom_rule_2 === 'pending_long') {
+                    breakoutPrice = w2.high;
+                    stopPrice = w3.low;
+                    typeLabel = '突破买入';
+                } else if (kdj.custom_rule_2 === 'pending_short') {
+                    breakoutPrice = w2.low;
+                    stopPrice = w3.high;
+                    typeLabel = '破位卖出';
+                }
+
+                if (breakoutPrice !== undefined) {
+                    const uniqueId = `${contract.symbol}_${type}`;
+                    pendingInfo = `
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 0.8rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #bbb;">${typeLabel}:</span>
+                                <span style="color: #fff; font-weight: 600;">${breakoutPrice.toFixed(1)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #bbb;">止损价格:</span>
+                                <span style="color: #fff; font-weight: 600;">${stopPrice.toFixed(1)}</span>
+                            </div>
+                            
+                            <!-- Inline Calculator -->
+                            <div style="margin-top: 8px; display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation()">
+                                <label style="color: #bbb; font-size: 0.75rem;">风险(¥):</label>
+                                <input type="number" id="risk_${uniqueId}" placeholder="3000" list="riskOptions" style="width: 70px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; padding: 2px 4px; font-size: 0.75rem;" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); calculatePendingPosition('${contract.symbol}', '${uniqueId}', ${breakoutPrice}, ${stopPrice}, '${futureCode}')" style="background: #6366f1; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer;">计算</button>
+                            </div>
+                            <div id="result_${uniqueId}" style="margin-top: 4px; font-size: 0.75rem; color: #22c55e; display: none;"></div>
+                        </div>
+                    `;
+                }
+            }
+
             return `
                 <div class="contract-box ${type} ${isPending ? "pending-highlight" : ""}"> 
                     <div class="contract-label">
@@ -561,8 +603,68 @@
                     </div>
                     <span class="kdj-pattern ${patternClass}">${kdj.pattern}</span>
                     <div style="margin-top:4px;">${ruleTags}</div>
+                    ${pendingInfo}
                 </div>
             `;
+        }
+
+        function calculatePendingPosition(symbol, uniqueId, entryPrice, stopPrice, activeCode) {
+            // Find product specs
+            // activeCode might be passed or we can find it from FUTURES_DATA if we iterate
+            // But better to pass it. I added 'activeCode' arg above but I need to make sure 'future' is available in renderContractBox scope?
+            // Wait, 'future' is NOT available in renderContractBox scope in previous code.
+            // I need to change renderContractBox signature or find it.
+            // renderContractBox(future.main, 'main') -> I should pass future code too?
+            // Actually 'contract.symbol' usually contains the code (e.g. C2605 -> C). 
+            // But specs are keyed by 'C', 'RB' etc.
+            // Let's try to extract code from symbol (letters part).
+
+            let productCode = activeCode;
+            if (!productCode) {
+                // heuristic extraction
+                const match = symbol.match(/^[A-Za-z]+/);
+                if (match) productCode = match[0].toUpperCase();
+            }
+
+            const product = futuresData[productCode];
+            const riskInput = document.getElementById(`risk_${uniqueId}`);
+            const resultDiv = document.getElementById(`result_${uniqueId}`);
+
+            if (!product || !riskInput || !resultDiv) {
+                console.error("Missing data for calculation");
+                return;
+            }
+
+            const risk = parseFloat(riskInput.value) || 3000;
+            if (risk <= 0) {
+                resultDiv.innerHTML = "请输入有效风险金额";
+                resultDiv.style.display = "block";
+                resultDiv.style.color = "#ef4444";
+                return;
+            }
+
+            const priceDiff = Math.abs(entryPrice - stopPrice);
+            if (priceDiff === 0) {
+                resultDiv.innerHTML = "差价为0";
+                resultDiv.style.display = "block";
+                return;
+            }
+
+            const riskPerPoint = priceDiff / product.tickSize;
+            const valuePerTick = product.tickSize * product.multiplier;
+            const riskPerContract = riskPerPoint * valuePerTick;
+
+            const contracts = Math.floor(risk / riskPerContract);
+            const actualRisk = contracts * riskPerContract;
+            const margin = contracts * entryPrice * product.multiplier * 0.1; // Est 10%
+
+            resultDiv.innerHTML = `
+                <div>建议仓位: <strong>${contracts}</strong> 手</div>
+                <div>实际风险: ¥${actualRisk.toFixed(0)}</div>
+                <div>预估保证金: ¥${margin.toFixed(0)}</div>
+            `;
+            resultDiv.style.display = "block";
+            resultDiv.style.color = "#22c55e";
         }
 
         function renderFuturesGrid() {
@@ -613,8 +715,8 @@
                             <span class="futures-code">${future.code}</span>
                         </div>
                         <div class="contracts-container">
-                            ${renderContractBox(future.main, 'main')}
-                            ${renderContractBox(future.sub, 'sub')}
+                            ${renderContractBox(future.main, 'main', future.code)}
+                            ${renderContractBox(future.sub, 'sub', future.code)}
                         </div>
                         <div class="update-time">更新: ${updateTime} <span style="margin-left:8px; color:#6366f1;">📉 点击查看周线图</span></div>
                     </div>
@@ -788,6 +890,22 @@
             chartInstance.setOption(option);
         }
     </script>
+    <datalist id="riskOptions">
+        <option value="1000">
+        <option value="2000">
+        <option value="3000">
+        <option value="4000">
+        <option value="5000">
+        <option value="6000">
+        <option value="7000">
+        <option value="8000">
+        <option value="9000">
+        <option value="10000">
+        <option value="12000">
+        <option value="15000">
+        <option value="18000">
+        <option value="20000">
+    </datalist>
 </body>
 
 </html>
