@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票季线蓄势 - Trading Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        .futures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .futures-card {
+            background: var(--card-bg, rgba(255, 255, 255, 0.05));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .futures-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color, #6366f1);
+        }
+
+        .futures-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .futures-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary, #fff);
+        }
+
+        .futures-code {
+            font-size: 0.8rem;
+            color: var(--text-secondary, #888);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .sector-tag {
+            font-size: 0.75rem;
+            color: #aaa;
+            border: 1px solid #444;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stock-stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: #ccc;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stock-stat-item {
+            display: flex;
+            gap: 4px;
+        }
+
+        .stock-stat-label {
+            color: #666;
+        }
+
+        .filter-bar {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+            background: transparent;
+            color: var(--text-secondary, #888);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color, #6366f1);
+            color: white;
+            border-color: var(--primary-color, #6366f1);
+        }
+
+        .contract-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .kdj-mini {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .kdj-k {
+            color: #f59e0b;
+        }
+
+        .kdj-d {
+            color: #3b82f6;
+        }
+
+        .kdj-j {
+            color: #a855f7;
+        }
+
+        .rule-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .rule-tag.long {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+
+        .rule-tag.short {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .pending-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.2);
+            font-size: 0.85rem;
+        }
+
+        .pending-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .pending-label {
+            color: #bbb;
+        }
+
+        .pending-val {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            margin: 5% auto;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1000px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            color: #aaa;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        #chartContainer {
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Trading Calculator</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="subtitle">股票季线 "蓄势" 筛选 (排除北交所/科创板/ST/亏损)</p>
+                <div id="updateTime" style="font-size: 0.8rem; color: #888;"></div>
+            </div>
+        </header>
+
+        <div class="tab-navigation">
+            <a href="index.html" class="tab-button">🖥️ 计算器</a>
+            <a href="history.html" class="tab-button">📝 历史记录</a>
+            <a href="positions.html" class="tab-button">📊 持仓管理</a>
+            <a href="futures.html" class="tab-button">📈 期货行情</a>
+            <a href="stocks_quarterly.html" class="tab-button active">📊 股票季线</a>
+        </div>
+
+        <div class="tab-content active" style="display: block;">
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setFilter('all')">全部股票</button>
+                <button class="filter-btn" onclick="setFilter('pending')">只看蓄势</button>
+                <button class="filter-btn" onclick="setFilter('unbroken')">蓄势待破</button>
+                <button class="filter-btn" onclick="setFilter('near_breakout')">临门一脚</button>
+                <button class="filter-btn" onclick="setFilter('long')">做多趋势</button>
+            </div>
+            <div id="statusMsg" style="text-align: center; color: #888; margin: 20px;">正在加载数据...</div>
+            <div class="futures-grid" id="stockGrid"></div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Trading Calculator</p>
+        </footer>
+    </div>
+
+    <!-- Chart Modal -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">K线图</span>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="chartContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let STOCK_DATA = [];
+        let chartInstance = null;
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                // Add timestamp to prevent caching
+                const t = new Date().getTime();
+                // Try to fetch full list first
+                let response = await fetch(`stock_quarterly_all.json?v=${t}`);
+                if (!response.ok) {
+                    // Fallback to pending if all not exists
+                    response = await fetch(`stock_quarterly_pending.json?v=${t}`);
+                }
+
+                if (!response.ok) throw new Error("File not found");
+                STOCK_DATA = await response.json();
+
+                document.getElementById('statusMsg').style.display = 'none';
+                updateTitle();
+
+                renderGrid();
+            } catch (e) {
+                document.getElementById('statusMsg').innerHTML = `
+                    <p>暂无数据或数据加载失败。</p>
+                    <p>请运行后端脚本: <code>python fetch_stocks_quarterly.py</code></p>
+                `;
+            }
+
+            // Close modal
+            window.onclick = function (event) {
+                if (event.target == document.getElementById('chartModal')) closeModal();
+            }
+        });
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                const btnText = btn.innerText;
+                let isActive = false;
+
+                if (filter === 'all' && btnText.includes('全部')) isActive = true;
+                else if (filter === 'pending' && btnText.includes('只看蓄势')) isActive = true;
+                else if (filter === 'unbroken' && btnText.includes('蓄势待破')) isActive = true;
+                else if (filter === 'near_breakout' && btnText.includes('临门一脚')) isActive = true;
+                else if (filter === 'long' && btnText.includes('做多趋势')) isActive = true;
+
+                if (isActive) btn.classList.add('active');
+            });
+            renderGrid();
+        }
+
+        function updateTitle() {
+            document.getElementById('updateTime').textContent = `共加载 ${STOCK_DATA.length} 只股票`;
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('stockGrid');
+
+            let displayData = STOCK_DATA;
+            if (currentFilter === 'pending') {
+                // User requested only Long for stocks
+                displayData = STOCK_DATA.filter(item => item.status === 'pending_long');
+            } else if (currentFilter === 'unbroken') {
+                // Pending AND Price <= Breakout (Q2 High)
+                displayData = STOCK_DATA.filter(item => {
+                    return item.status === 'pending_long' && item.price <= item.q2_high;
+                });
+            } else if (currentFilter === 'near_breakout') {
+                // Pending AND Price < Breakout AND Price * (1+Limit) >= Breakout
+                displayData = STOCK_DATA.filter(item => {
+                    if (item.status !== 'pending_long') return false;
+                    if (item.price >= item.q2_high) return false; // Already broken outcomes
+
+                    const code = String(item.code);
+                    // ChiNext (30) or STAR (68) -> 20%. Others -> 10%
+                    // Note: STAR 68 is mostly filtered out by backend, but keep logic generic
+                    let limitPct = 0.10;
+                    if (code.startsWith('30') || code.startsWith('68')) {
+                        limitPct = 0.20;
+                    }
+
+                    const limitPrice = item.price * (1 + limitPct);
+
+                    // Condition 1: Within 1 limit up of breakout
+                    if (limitPrice < item.q2_high) return false;
+
+                    // Condition 2: Period High Check (No price in history > Breakout Price)
+                    // item.data contains the fetched quarterly history (e.g. last 12-20 quarters)
+                    if (item.data && item.data.length > 0) {
+                        const maxHigh = Math.max(...item.data.map(d => d.high));
+                        // Allow small epsilon or direct comparison. 
+                        // If maxHigh > q2_high, it means there is a resistance above.
+                        if (maxHigh > item.q2_high + 0.01) return false;
+                    }
+
+                    return true;
+                });
+            } else if (currentFilter === 'long') {
+                displayData = STOCK_DATA.filter(item => item.kdj.pattern === '多头排列');
+            }
+
+            // Limit to first 100 on 'all' to avoid browser lag, or implement pagination
+            // For now, let's just show top 100 if 'all', or all matches if filter
+            let limit = displayData.length;
+            if (currentFilter === 'all' && displayData.length > 200) {
+                limit = 200;
+                // maybe show a message?
+            }
+
+            const renderList = displayData.slice(0, limit);
+
+            if (renderList.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">没有找到符合条件的股票</div>';
+                return;
+            }
+
+            grid.innerHTML = renderList.map(item => {
+                // Stock only considers Long pending
+                const isPending = item.status === 'pending_long';
+                let tagHtml = '';
+                let pendingHtml = '';
+
+                if (isPending) {
+                    const isLong = true;
+                    const direction = '做多蓄势';
+                    const colorClass = 'long';
+                    tagHtml = `<span class="rule-tag ${colorClass}">${direction}</span>`;
+
+                    let breakoutPrice = item.q2_high;
+                    let stopPrice = item.q3_low;
+
+                    pendingHtml = `
+                        <div class="pending-info">
+                            <div class="pending-row">
+                                <span class="pending-label">突破买入:</span>
+                                <span class="pending-val">${breakoutPrice.toFixed(2)}</span>
+                            </div>
+                        </div>`;
+                } else if (item.kdj.pattern) {
+                    // Show simple pattern tag
+                    const p = item.kdj.pattern;
+                    const cls = p.includes('多头') ? 'long' : (p.includes('空头') ? 'short' : '');
+                    tagHtml = `<span class="rule-tag ${cls}" style="border:1px solid #444; color:#888;">${p}</span>`;
+                }
+
+                return `
+                    <div class="futures-card" onclick="openChart('${item.code}')">
+                        <div class="futures-card-header">
+                            <div>
+                                <span class="futures-name">${item.name}</span>
+                                <span class="futures-code">${item.code}</span>
+                            </div>
+                            ${item.sector ? `<span class="sector-tag">${item.sector}</span>` : ''}
+                        </div>
+                        <div class="contract-price" style="color: #fff; margin-bottom: 5px;">${item.price.toFixed(2)}</div>
+                        
+                        <div class="stock-stat-row">
+                             <div class="stock-stat-item">
+                                 <span class="stock-stat-label">PE(动):</span>
+                                 <span>${item.pe ? item.pe.toFixed(1) : '--'}</span>
+                             </div>
+                             <div class="stock-stat-item">
+                                 <span class="stock-stat-label">市值:</span>
+                                 <span>${item.market_cap ? (item.market_cap / 100000000).toFixed(1) + '亿' : '--'}</span>
+                             </div>
+                             <div class="stock-stat-item">
+                                 <span class="stock-stat-label">额:</span>
+                                 <span>${item.turnover ? (item.turnover / 100000000).toFixed(1) + '亿' : '--'}</span>
+                             </div>
+                        </div>
+
+                        <div class="kdj-mini">
+                            <span class="kdj-k">K:${item.kdj.K.toFixed(1)}</span>
+                            <span class="kdj-d">D:${item.kdj.D.toFixed(1)}</span>
+                            <span class="kdj-j">J:${item.kdj.J.toFixed(1)}</span>
+                        </div>
+                        
+                        ${tagHtml}
+                        ${pendingHtml}
+                    </div>
+                `;
+            }).join('');
+
+            if (displayData.length > limit) {
+                grid.innerHTML += `<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #666;">还有 ${displayData.length - limit} 只股票未显示 (请使用筛选功能)</div>`;
+            }
+        }
+
+        function openChart(code) {
+            const item = STOCK_DATA.find(s => s.code === code);
+            if (!item || !item.data) return;
+
+            document.getElementById('modalTitle').textContent = `${item.name} (${item.code}) - 季线图`;
+            document.getElementById('chartModal').style.display = 'block';
+
+            if (!chartInstance) chartInstance = echarts.init(document.getElementById('chartContainer'));
+
+            const dates = item.data.map(d => d.date);
+            const kLineData = item.data.map(d => [d.open, d.close, d.low, d.high]);
+            const kValues = item.data.map(d => d.K);
+            const dValues = item.data.map(d => d.D);
+            const jValues = item.data.map(d => d.J);
+
+            chartInstance.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' }
+                },
+                legend: { data: ['季线', 'K', 'D', 'J'] },
+                grid: {
+                    left: '5%', right: '5%', bottom: '15%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    scale: true
+                },
+                yAxis: [{
+                    scale: true,
+                    splitLine: { show: false }
+                }, {
+                    scale: true,
+                    splitLine: { show: false },
+                    position: 'right'
+                }],
+                dataZoom: [{ type: 'inside' }],
+                series: [
+                    {
+                        name: '季线',
+                        type: 'candlestick',
+                        data: kLineData,
+                        itemStyle: {
+                            color: '#ef4444',
+                            color0: '#22c55e',
+                            borderColor: '#ef4444',
+                            borderColor0: '#22c55e'
+                        }
+                    },
+                    {
+                        name: 'K',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: kValues,
+                        itemStyle: { color: '#f59e0b' },
+                        lineStyle: { width: 1 }
+                    },
+                    {
+                        name: 'D',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: dValues,
+                        itemStyle: { color: '#3b82f6' },
+                        lineStyle: { width: 1 }
+                    },
+                    {
+                        name: 'J',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: jValues,
+                        itemStyle: { color: '#a855f7' },
+                        lineStyle: { width: 1 }
+                    }
+                ]
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('chartModal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

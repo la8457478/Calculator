@@ -1,25 +1,36 @@
-
+"""
+仅仅重新获取缺失的期货数据，并合并到 futures_data.js
+Strategies:
+1. Standard `futures_zh_daily_sina`
+2. Fallback `futures_zh_minute_sina` (60min) -> Resample to Weekly
+"""
 import akshare as ak
 import json
+import os
 import pandas as pd
-from datetime import datetime
 import time
-import traceback
+from datetime import datetime
 
-# 复用之前的辅助函数
+# --- 核心函数复用 ---
+
 def calculate_kdj(df, n=9, m1=3, m2=3):
+    if len(df) < n: return df
     low_n = df['low'].rolling(window=n, min_periods=1).min()
     high_n = df['high'].rolling(window=n, min_periods=1).max()
     rsv = (df['close'] - low_n) / (high_n - low_n) * 100
     rsv = rsv.fillna(50)
+    
     k = pd.Series(index=df.index, dtype=float)
     d = pd.Series(index=df.index, dtype=float)
     k.iloc[0] = 50
     d.iloc[0] = 50
+    
     for i in range(1, len(df)):
         k.iloc[i] = (m1 - 1) / m1 * k.iloc[i-1] + 1 / m1 * rsv.iloc[i]
         d.iloc[i] = (m2 - 1) / m2 * d.iloc[i-1] + 1 / m2 * k.iloc[i]
+    
     j = 3 * k - 2 * d
+    
     df['K'] = round(k, 2)
     df['D'] = round(d, 2)
     df['J'] = round(j, 2)
@@ -35,137 +46,205 @@ def analyze_kdj_pattern(k, d, j):
     elif k < d and j < k: patterns.append("空头排列")
     return ", ".join(patterns) if patterns else "中性区间"
 
-def daily_to_weekly(df):
-    df = df.copy()
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
-    weekly = df.resample('W').agg({
-        'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
-    }).dropna()
-    weekly.reset_index(inplace=True)
-    weekly['date'] = weekly['date'].dt.strftime('%Y-%m-%d')
-    return weekly
-
 def check_rules(df, current_kdj):
     if len(df) < 3: return None, None
     w3 = df.iloc[-1]
     w2 = df.iloc[-2]
     w1 = df.iloc[-3]
     
-    is_k_gt_d = w3['K'] > w3['D']
-    is_k_lt_d = w3['K'] < w3['D']
+    k = current_kdj['K']
+    d = current_kdj['D']
+    is_k_gt_d = k > d
+    is_k_lt_d = k < d
 
     p1_status = None
-    # Pattern 1 Long: Lower High + Gold Cross
-    if (w1['high'] > w2['high']) and is_k_gt_d: # 修正后的逻辑：前高降低+金叉
-        p1_status = 'long'
-    # Pattern 1 Short: Lower Highs + Death Cross
-    elif (w1['high'] > w2['high']) and (w2['high'] > w3['high']) and is_k_lt_d:
-        p1_status = 'short'
+    if (w2['high'] > w3['high']) and is_k_gt_d: p1_status = 'long'
+    elif (w1['high'] > w2['high']) and (w2['high'] > w3['high']) and is_k_lt_d: p1_status = 'short'
 
     p2_status = None
-    # Pattern 2 Long (Breakout): Descending Highs + Break w2 High
-    if (w1['high'] > w2['high']) and (w3['close'] > w2['high']):
-        p2_status = 'long'
-    # Pattern 2 Short (Breakdown): Ascending Lows + Break w2 Low
-    elif (w1['low'] < w2['low']) and (w3['close'] < w2['low']):
-        p2_status = 'short'
+    cond_pending_long = (w2['high'] > w1['high']) and (w3['close'] > w1['low']) and \
+                        (w3['close'] <= w2['high']) and (w3['high'] < w2['high']) and is_k_gt_d
+    
+    cond_active_long = (w2['high'] > w1['high']) and (w3['close'] > w2['high']) and is_k_gt_d
+    
+    cond_pending_short = (w2['low'] < w1['low']) and (w3['close'] < w1['high']) and \
+                         (w3['close'] >= w2['low']) and (w3['low'] > w2['low']) and is_k_lt_d
+                         
+    cond_active_short = (w2['low'] < w1['low']) and (w3['close'] < w2['low']) and is_k_lt_d
+    
+    if cond_active_long: p2_status = 'long'
+    elif cond_pending_long: p2_status = 'pending_long'
+    elif cond_active_short: p2_status = 'short'
+    elif cond_pending_short: p2_status = 'pending_short'
         
     return p1_status, p2_status
 
-def fetch_and_analyze():
-    with open("futures_list.json", "r", encoding="utf-8") as f:
-        futures_list = json.load(f)
+def process_dataframe_to_weekly(df):
+    """通用处理：标准化列名 -> 周线化 -> KDJ"""
+    df.columns = [col.lower() for col in df.columns]
     
-    all_data = {}
-    matches = []
+    # 确保有 datetime 列并设为索引
+    if 'date' in df.columns:
+        df['datetime'] = pd.to_datetime(df['date'])
+    elif 'datetime' in df.columns:
+        df['datetime'] = pd.to_datetime(df['datetime'])
     
-    print(f"Starting fetch for {len(futures_list)} items using Main Continuous Contracts...")
-
-    for i, fut in enumerate(futures_list):
-        code = fut['code']
-        name = fut['name']
-        symbol = f"{code}0" # 连续合约
+    if 'datetime' in df.columns:
+        df.set_index('datetime', inplace=True)
+    
+    # Resample to Weekly
+    weekly = df.resample('W').agg({
+        'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
+    }).dropna()
+    
+    weekly.reset_index(inplace=True)
+    if 'datetime' in weekly.columns:
+        weekly.rename(columns={'datetime': 'date'}, inplace=True)
         
+    weekly['date'] = weekly['date'].dt.strftime('%Y-%m-%d')
+    weekly = weekly.tail(13) # Last 3 months approx
+    
+    if len(weekly) < 5: return None
+    
+    return calculate_kdj(weekly)
+
+def format_result(symbol, contract_type, weekly_df):
+    last = weekly_df.iloc[-1]
+    kdj = {
+        'K': float(last['K']), 'D': float(last['D']), 'J': float(last['J']),
+        'pattern': analyze_kdj_pattern(last['K'], last['D'], last['J'])
+    }
+    
+    p1, p2 = check_rules(weekly_df, kdj)
+    kdj['custom_rule_1'] = p1
+    kdj['custom_rule_2'] = p2
+    
+    records = []
+    for _, row in weekly_df.iterrows():
+        records.append({
+            "date": str(row["date"]),
+            "open": float(row["open"]), "high": float(row["high"]),
+            "low": float(row["low"]), "close": float(row["close"]),
+            "volume": int(row["volume"]),
+            "K": float(row["K"]), "D": float(row["D"]), "J": float(row["J"])
+        })
+        
+    return {
+        "symbol": symbol,
+        "contractType": contract_type,
+        "lastUpdate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "latestKDJ": kdj,
+        "data": records
+    }
+
+def fetch_contract_data(symbol, contract_type="主力"):
+    # Method 1: Daily API
+    try:
+        df = ak.futures_zh_daily_sina(symbol=symbol)
+        if df is not None and not df.empty:
+            weekly_df = process_dataframe_to_weekly(df)
+            if weekly_df is not None:
+                return format_result(symbol, contract_type, weekly_df)
+    except Exception as e:
+        pass # Fallback
+
+    # Method 2: Minute API (60min) -> Resample
+    try:
+        # print(f"  Fallback to Minute Data for {symbol}...")
+        df = ak.futures_zh_minute_sina(symbol=symbol, period='60')
+        if df is not None and not df.empty:
+            weekly_df = process_dataframe_to_weekly(df)
+            if weekly_df is not None:
+                return format_result(symbol, contract_type, weekly_df)
+    except Exception as e:
+        print(f"  Minute fetch error for {symbol}: {e}")
+
+    return None
+
+def get_realtime_list_fix(name, code):
+    search_names = [name]
+    if code == 'EC': search_names = ['集运欧线', '欧线集运']
+    if code == 'ZC': search_names = ['动力煤', '郑煤']
+    if code == 'OI': search_names = ['菜籽油', '菜油']
+    if code == 'CF': search_names = ['棉花一号', '棉花']
+    
+    for n in search_names:
         try:
-            # 尝试使用 ak.futures_main_sina 获取主力连续
-            df = ak.futures_main_sina(symbol=symbol)
-            if df is None or df.empty:
-                print(f"Skipping {name}: No data")
-                continue
-                
-            df.columns = [col.lower() for col in df.columns]
-            df = df.tail(150) # Enough for weekly conversion
-            
-            weekly = daily_to_weekly(df)
-            weekly = weekly.tail(20)
-            
-            if len(weekly) < 5: continue
-            
-            weekly = calculate_kdj(weekly)
-            
-            latest = weekly.iloc[-1]
-            pattern_str = analyze_kdj_pattern(latest['K'], latest['D'], latest['J'])
-            
-            latest_kdj = {
-                'K': float(latest['K']),
-                'D': float(latest['D']),
-                'J': float(latest['J']),
-                'pattern': pattern_str
-            }
-            
-            p1, p2 = check_rules(weekly, latest_kdj)
-            latest_kdj['custom_rule_1'] = p1
-            latest_kdj['custom_rule_2'] = p2
-            
-            if p1 or p2:
-                matches.append(f"{name} ({code}): S1={p1}, S2={p2}")
-            
-            # Format Records
-            records = []
-            for _, row in weekly.tail(13).iterrows():
-                records.append({
-                    "date": str(row["date"]),
-                    "open": float(row["open"]), "high": float(row["high"]),
-                    "low": float(row["low"]), "close": float(row["close"]),
-                    "K": float(row["K"]), "D": float(row["D"]), "J": float(row["J"])
-                })
-                
-            all_data[code] = {
-                "name": name,
-                "code": code,
-                "period": "weekly",
-                "main": {
-                    "symbol": symbol,
-                    "contractType": "主力连续",
-                    "lastUpdate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "latestKDJ": latest_kdj,
-                    "data": records
-                },
-                "sub": None
-            }
-            
-            print(f"[{i+1}/{len(futures_list)}] {name}: OK ({p1}, {p2})")
-            
-        except Exception as e:
-            print(f"[{i+1}] Error {name}: {e}")
-            # traceback.print_exc()
+            df = ak.futures_zh_realtime(symbol=n)
+            if df is not None and not df.empty:
+                return df
+        except:
+            continue
+    return None
+
+def main():
+    if not os.path.exists('futures_data.js'):
+        return
+
+    with open('futures_data.js', 'r', encoding='utf-8') as f:
+        content = f.read()
+        start = content.find('{')
+        end = content.rfind('};') + 1
+        data = json.loads(content[start:end])
+
+    missing_codes = []
+    for code, info in data.items():
+        if not info.get('main') or not info['main'].get('data'):
+            missing_codes.append(code)
+
+    print(f"Fixing data for {len(missing_codes)} contracts: {missing_codes}")
+
+    for code in missing_codes:
+        name = data[code].get('name', code)
+        print(f"\nProcessing {name} ({code})...")
         
-        time.sleep(0.3)
-        if i % 5 == 0:
-             save_js(all_data)
+        df_real = get_realtime_list_fix(name, code)
+        main_symbol, sub_symbol = None, None
+        
+        if df_real is not None and not df_real.empty:
+            if 'hold' not in df_real.columns:
+                 for c in ['position', 'open_interest', 'oi']: 
+                     if c in df_real.columns: df_real['hold'] = df_real[c]
+            if 'hold' in df_real.columns:
+                 df_real = df_real.sort_values('hold', ascending=False)
+                 symbols = [s for s in df_real['symbol'].tolist() if not s.endswith('0')]
+                 if len(symbols) > 0: main_symbol = symbols[0]
+                 if len(symbols) > 1: sub_symbol = symbols[1]
 
-    save_js(all_data)
-    print("\nMatches Found:")
-    for m in matches:
-        print(m)
+        if not main_symbol:
+            # Smart Fallback
+            if code == 'EC': main_symbol = f"{code}2604"
+            else: main_symbol = f"{code}2605"
+            print(f"  Fallback Main: {main_symbol}")
 
-def save_js(data):
-    content = f"const FUTURES_DATA = {json.dumps(data, ensure_ascii=False, indent=2)};\n"
-    content += "if (typeof module !== 'undefined' && module.exports) { module.exports = FUTURES_DATA; }"
-    with open("futures_data.js", "w", encoding="utf-8") as f:
-        f.write(content)
+        if main_symbol:
+            print(f"  Fetching Main: {main_symbol}")
+            main_data = fetch_contract_data(main_symbol, "主力")
+            if main_data:
+                data[code]['main'] = main_data
+                print(f"  Main Success: {main_symbol}")
+            else:
+                fallback_symbol = f"{code}2609"
+                print(f"  Main Failed. Trying {fallback_symbol}...")
+                main_data = fetch_contract_data(fallback_symbol, "主力")
+                if main_data:
+                    data[code]['main'] = main_data
+                    print(f"  Main Success (Fallback): {fallback_symbol}")
+                else:
+                    print(f"  Main Failed Completely.")
+
+        if sub_symbol:
+            print(f"  Fetching Sub: {sub_symbol}")
+            sub_data = fetch_contract_data(sub_symbol, "次主力")
+            if sub_data:
+                data[code]['sub'] = sub_data
+                print(f"  Sub Success: {sub_symbol}")
+
+    js_content = f"// 期货周线数据 + KDJ 指标（主力 + 次主力合约）\n// 更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n// 数据来源: 新浪财经 (via AKShare)\n// 周期: 周线 (最近3个月)\n\nconst FUTURES_DATA = {json.dumps(data, ensure_ascii=False, indent=2)};\n\nif (typeof module !== 'undefined' && module.exports) {{ module.exports = FUTURES_DATA; }}"
+    
+    with open('futures_data.js', 'w', encoding='utf-8') as f:
+        f.write(js_content)
+    print("\nFixed data saved to futures_data.js")
 
 if __name__ == "__main__":
-    fetch_and_analyze()
+    main()
