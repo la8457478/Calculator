@@ -1,0 +1,232 @@
+# 微信小程序迁移实施方案
+
+## 当前项目分析
+
+| 文件 | 大小 | 说明 |
+|---|---|---|
+| [index.html](file:///d:/andy/Calculator/index.html) | 6KB | 计算器主页 |
+| [history.html](file:///d:/andy/Calculator/history.html) | 3KB | 历史记录页 |
+| [positions.html](file:///d:/andy/Calculator/positions.html) | 3KB | 持仓管理页 |
+| [futures.html](file:///d:/andy/Calculator/futures.html) | 36KB | 期货行情页（含K线图） |
+| [script.js](file:///d:/andy/Calculator/script.js) | 42KB | 核心业务逻辑 |
+| [futures_data.js](file:///d:/andy/Calculator/futures_data.js) | **~397KB** | 期货历史数据（静态） |
+| [stocks_data.js](file:///d:/andy/Calculator/stocks_data.js) | **~575KB** | 股票数据（静态） |
+| [futures_specs.js](file:///d:/andy/Calculator/futures_specs.js) | 9KB | 期货品种规格 |
+| [style.css](file:///d:/andy/Calculator/style.css) | 25KB | 样式文件 |
+
+> [!WARNING]
+> [futures_data.js](file:///d:/andy/Calculator/futures_data.js)（397KB）+ [stocks_data.js](file:///d:/andy/Calculator/stocks_data.js)（575KB）合计约 **1MB** 的静态数据，是最大的技术挑战。微信小程序**整包体积上限为 2MB**，超包必须进行分包或云端存储处理。
+
+---
+
+## Web vs 小程序核心差异
+
+| 能力 | Web (当前) | 微信小程序 |
+|---|---|---|
+| 页面结构 | HTML | WXML |
+| 样式 | CSS | WXSS（基本兼容） |
+| 脚本 | JS（DOM API） | JS（**无 DOM/BOM**） |
+| 存储 | `localStorage` | `wx.setStorageSync` |
+| 网络请求 | `fetch` / `XMLHttpRequest` | `wx.request`（需 HTTPS 域名白名单） |
+| 图表 | ECharts via CDN | [echarts-for-weixin](https://github.com/ecomfe/echarts-for-weixin) 组件 |
+| 字体 | Google Fonts | **不支持**，需本地字体或系统字体 |
+| 路由 | `<a href>` 跳转 | `wx.navigateTo` / `<navigator>` |
+| 包大小限制 | 无限制 | **主包 ≤ 2MB**，分包 ≤ 20MB |
+
+---
+
+## 改造策略总览
+
+```mermaid
+flowchart TD
+    A[现有Web项目] --> B{数据体积评估}
+    B -->|小于2MB| C[全部打包进小程序]
+    B -->|接近或超出2MB| D[分包 + 云端数据]
+    D --> E[主包: 计算器+历史+持仓]
+    D --> F[分包: 期货行情页 + 数据]
+    E & F --> G[小程序主体]
+    G --> H[上线审核]
+```
+
+**推荐方案：分包策略**
+- **主包**：计算器 + 历史记录 + 持仓管理 + [futures_specs.js](file:///d:/andy/Calculator/futures_specs.js)（9KB）
+- **子包**：期货行情页 + [futures_data.js](file:///d:/andy/Calculator/futures_data.js)（按需加载）
+- **云端可选**：[stocks_data.js](file:///d:/andy/Calculator/stocks_data.js) 和 [futures_data.js](file:///d:/andy/Calculator/futures_data.js) 迁移到云存储，彻底解决体积限制
+
+---
+
+## 小程序项目结构设计
+
+```
+miniprogram/
+├── app.js              # 全局初始化，存储初始化
+├── app.json            # 页面路由、分包配置
+├── app.wxss            # 全局样式（从 style.css 转换）
+├── pages/
+│   ├── calculator/     # 计算器主页（对应 index.html）
+│   │   ├── calculator.wxml
+│   │   ├── calculator.js
+│   │   └── calculator.wxss
+│   ├── history/        # 历史记录（对应 history.html）
+│   │   ├── history.wxml
+│   │   ├── history.js
+│   │   └── history.wxss
+│   └── positions/      # 持仓管理（对应 positions.html）
+│       ├── positions.wxml
+│       ├── positions.js
+│       └── positions.wxss
+├── subpackages/
+│   └── futures/        # 分包：期货行情（对应 futures.html）
+│       ├── pages/futures/
+│       │   ├── futures.wxml
+│       │   ├── futures.js
+│       │   └── futures.wxss
+│       └── data/
+│           └── futures_data.js
+├── utils/
+│   ├── storage.js      # localStorage → wx.setStorageSync 封装
+│   ├── calculator.js   # 核心计算逻辑（从 script.js 提取）
+│   └── format.js       # 格式化工具函数
+├── data/
+│   ├── futures_specs.js # 期货品种规格（9KB，可放主包）
+│   └── stocks_data.js   # 股票数据（575KB，建议云端或简化）
+└── components/
+    └── ec-canvas/       # echarts-for-weixin 组件
+```
+
+---
+
+## 各模块迁移详情
+
+### 1. 存储层（优先级：高）
+
+```javascript
+// Web: localStorage
+localStorage.setItem(key, JSON.stringify(data));
+localStorage.getItem(key);
+
+// 小程序: wx.setStorageSync
+wx.setStorageSync(key, data);  // 自动序列化
+wx.getStorageSync(key);
+```
+
+封装为 `utils/storage.js`，所有页面统一调用，无需改动业务逻辑。
+
+### 2. 计算器页（[index.html](file:///d:/andy/Calculator/index.html) → `pages/calculator/`）
+
+**主要工作**：
+- HTML → WXML：`<div>` → `<view>`，`<input>` 保留，[onclick](file:///d:/andy/Calculator/futures.html#434-439) → `bindtap`
+- 下拉搜索组件：原 `.custom-select-container` → 使用 `<picker>` 组件或自定义组件
+- 计算逻辑基本不变，提取到 `utils/calculator.js`
+- 移除 Google Fonts 引用，改用系统字体 `-apple-system, PingFang SC`
+
+### 3. 历史记录 & 持仓管理页
+
+**主要工作**：
+- `innerHTML` 动态渲染 → WXML `wx:for` 数据绑定
+- [showModal()](file:///d:/andy/Calculator/script.js#849-861) → 小程序 `wx.showModal` 或自定义弹窗组件
+- [showToast()](file:///d:/andy/Calculator/script.js#865-872) → `wx.showToast()`
+
+### 4. 期货行情页（[futures.html](file:///d:/andy/Calculator/futures.html) → `subpackages/futures/`）
+
+> [!IMPORTANT]
+> 这是最复杂的一页，因为包含 ECharts K线图
+
+**ECharts 替代方案**：使用官方 [echarts-for-weixin](https://github.com/ecomfe/echarts-for-weixin) 组件，API 与 Web 版基本一致。
+
+```xml
+<!-- WXML 使用 ec-canvas 组件 -->
+<ec-canvas id="myChart" canvas-id="myChart" ec="{{ ec }}"></ec-canvas>
+```
+
+### 5. 大体积数据处理（**关键决策点**）
+
+**方案A（简单）：直接分包**
+- [stocks_data.js](file:///d:/andy/Calculator/stocks_data.js) 放分包，按需加载
+- 优点：改动最小；缺点：数据是静态的，更新需重新发版
+
+**方案B（推荐）：云端 + 本地缓存**
+- 将 [futures_data.js](file:///d:/andy/Calculator/futures_data.js) 数据存入**微信云开发**数据库或腾讯云 COS
+- 小程序首次加载时拉取并缓存到本地
+- 优点：彻底解决包大小问题，数据可随时更新（运行 Python 脚本后上传即可）
+
+---
+
+## 部署上线所需条件
+
+### 必要条件
+
+| 项目 | 说明 | 预估费用 |
+|---|---|---|
+| **微信开放平台账号** | [mp.weixin.qq.com](https://mp.weixin.qq.com) 注册 | 免费 |
+| **小程序主体认证** | 个人主体：免费；企业/个人IP：300元/年 | 0~300元 |
+| **微信开发者工具** | [下载地址](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html) | 免费 |
+| **AppID** | 注册后在后台获取 | 免费 |
+
+### 可选条件（视数据方案而定）
+
+| 项目 | 说明 | 费用 |
+|---|---|---|
+| **微信云开发** | 存储期货/股票数据，免费额度通常够用 | 免费起步 |
+| **自有服务器 + HTTPS** | 若需自建 API 提供数据，需要域名和SSL证书，并在小程序后台配置合法域名白名单 | 数百元/年 |
+
+> [!NOTE]
+> 如果数据完全静态（不需要实时行情），可以**不需要后端服务器**，数据打包进客户端或放微信云存储即可。
+
+### 上线流程
+
+```
+1. 注册小程序账号（mp.weixin.qq.com）
+       ↓
+2. 获取 AppID，配置开发者工具
+       ↓
+3. 开发 & 本地调试（微信开发者工具真机预览）
+       ↓
+4. 上传代码到微信后台
+       ↓
+5. 提交审核（通常 1-3 个工作日）
+       ↓
+6. 审核通过后发布上线
+```
+
+---
+
+## 实施阶段计划
+
+### 阶段一：核心功能小程序（2-3天）
+
+- [x] 搭建小程序骨架（`app.js`, `app.json`）
+- [ ] 迁移 `utils/storage.js`（localStorage → wx.Storage）
+- [ ] 迁移 `utils/calculator.js`（核心计算逻辑，纯函数，无DOM依赖）
+- [ ] 迁移计算器页（`pages/calculator/`）
+- [ ] 迁移历史记录页（`pages/history/`）
+- [ ] 迁移持仓管理页（`pages/positions/`）
+
+### 阶段二：期货行情页（1-2天）
+
+- [ ] 集成 `echarts-for-weixin` 组件
+- [ ] 迁移期货行情页为分包（`subpackages/futures/`）
+- [ ] 适配 K线图交互
+
+### 阶段三：数据优化（可选）
+
+- [ ] 评估包体积，若超 2MB 则迁移大数据到云端
+- [ ] 搭建数据更新脚本（Python 脚本 → 上传云存储）
+
+### 阶段四：审核上线
+
+- [ ] 注册小程序账号、主体认证
+- [ ] 代码审查 & 真机测试
+- [ ] 提交微信审核
+- [ ] 发布上线
+
+---
+
+## 关键风险与应对
+
+| 风险 | 描述 | 应对 |
+|---|---|---|
+| **包大小超限** | 静态数据文件约 1MB，加上代码本体可能超 2MB | 分包 + 大数据云端化 |
+| **股票数据搜索性能** | 575KB 数据在小程序 JS 环境中可能较慢 | 简化股票列表，或仅保留常用品种 |
+| **ECharts 适配** | K线图需要使用 `ec-canvas` 组件，API略有不同 | 直接使用官方 echarts-for-weixin，兼容性良好 |
+| **审核合规** | 涉及金融计算类内容，需确保说明"仅供参考，不构成投资建议" | 在小程序描述和页面内添加免责声明 |
