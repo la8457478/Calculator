@@ -120,9 +120,9 @@ def seed_futures():
                     
                     # 按照先前 js 和爬虫脚本约定的标签名
                     state_tag = ""
-                    if r2 == "long_pending":
+                    if r2 == "pending_long":
                         state_tag = "S2: 蓄势"
-                    elif r2 == "short_pending":
+                    elif r2 == "pending_short":
                         state_tag = "S2: 蓄势"
                     elif r1 == "long":
                         state_tag = "S1: 复苏"
