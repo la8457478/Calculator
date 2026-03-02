@@ -13,6 +13,15 @@ from datetime import datetime, date
 # 将项目根目录加入路径，方便导入 app 模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# 全局变量记录抓取进度
+FETCH_PROGRESS = {
+    "is_running": False,
+    "current": 0,
+    "total": 0,
+    "percent": 0,
+    "log": ""
+}
+
 # 复用原有抓取逻辑
 from fetch_futures import (
     load_futures_list,
@@ -98,18 +107,34 @@ def upsert_klines(db, contract: FutureContract, contract_data: dict):
 
 
 def refresh_futures_to_db():
-    futures_list = load_futures_list() or DEFAULT_FUTURES_LIST
-    db = SessionLocal()
-    total_new = 0
+    global FETCH_PROGRESS
+    if FETCH_PROGRESS["is_running"]:
+        print("已有抓取任务在进行中，跳过。")
+        return
+        
+    FETCH_PROGRESS["is_running"] = True
+    FETCH_PROGRESS["log"] = "开始初始化数据池..."
+    FETCH_PROGRESS["current"] = 0
+    FETCH_PROGRESS["percent"] = 0
+    
+    try:
+        futures_list = load_futures_list() or DEFAULT_FUTURES_LIST
+        FETCH_PROGRESS["total"] = len(futures_list)
+        db = SessionLocal()
+        total_new = 0
 
-    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 开始拉取 {len(futures_list)} 个品种的本周数据（仅含日间收盘，夜盘属于下周）…\n")
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 开始拉取 {len(futures_list)} 个品种的本周数据（仅含日间收盘，夜盘属于下周）…\n")
 
-    for i, future in enumerate(futures_list, 1):
-        name    = future["name"]
-        code    = future["code"]
-        display = future.get("display", name)
+        for i, future in enumerate(futures_list, 1):
+            name    = future["name"]
+            code    = future["code"]
+            display = future.get("display", name)
 
-        print(f"[{i}/{len(futures_list)}] {display} ({code})")
+            FETCH_PROGRESS["current"] = i
+            FETCH_PROGRESS["percent"] = int((i / len(futures_list)) * 100)
+            FETCH_PROGRESS["log"] = f"正在拉取 ({i}/{len(futures_list)}) {display}"
+            
+            print(f"[{i}/{len(futures_list)}] {display} ({code})")
 
         # 1. 获取主力/次主力合约号
         main_code, sub_code = get_main_and_sub_contracts(name)
@@ -154,9 +179,17 @@ def refresh_futures_to_db():
         db.commit()
         time.sleep(0.5)
 
-    db.close()
-    print(f"\n[OK] 全部完成，本次新增 {total_new} 条 K 线数据。")
-
+        db.close()
+        print(f"\n[OK] 全部完成，本次新增 {total_new} 条 K 线数据。")
+        FETCH_PROGRESS["log"] = f"抓取完成 (新增 {total_new} 条数据)"
+        FETCH_PROGRESS["percent"] = 100
+    
+    except Exception as e:
+        FETCH_PROGRESS["log"] = f"抓取发生错误: {str(e)}"
+        print(f"Error: {e}")
+        raise e
+    finally:
+        FETCH_PROGRESS["is_running"] = False
 
 if __name__ == "__main__":
     refresh_futures_to_db()

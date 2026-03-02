@@ -158,7 +158,9 @@ def daily_to_weekly(df):
         'low': 'min',
         'close': 'last',
         'volume': 'sum'
-    }).dropna()
+    })
+    # 不要用 dropna() 否则会把本周未完结（没有填满所有交易日）的数据直接清理掉
+    weekly = weekly.dropna(subset=['close'])
     
     weekly.reset_index(inplace=True)
     weekly['date'] = weekly['date'].dt.strftime('%Y-%m-%d')

@@ -4,53 +4,39 @@ from sqlalchemy import desc
 from app.core.database import get_db
 from app.models.futures import FutureContract, FutureKlineWeekly
 from fastapi.responses import JSONResponse
-import subprocess
+import threading
 import os
+
+from refresh_futures_to_db import FETCH_PROGRESS
 
 router = APIRouter()
 
 @router.post("/trigger_fetch")
 def trigger_fetch_futures(db: Session = Depends(get_db)):
     """
-    手动触发期货数据爬取与入库
-    注意：此操作耗时较长（可能几十秒到几分钟），生产环境建议改为异步任务(Celery等)
+    手动触发期货数据爬取与入库（进程内直接调用，无需外部 python 命令）
+    注意：此操作耗时较长（数分钟），会在后台线程执行，接口立刻返回 202
     """
     try:
-        # 获取项目根目录 (Calculator/)
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        fetch_script = os.path.join(base_dir, "fetch_futures.py")
-        seed_script = os.path.join(base_dir, "app", "scripts", "seed_futures.py")
-        
-        # 1. 执行爬虫程序生成最新的 futures_data.js
-        # 注意: 传入 PYTHONPATH 确保能找到 app 模块
-        env = os.environ.copy()
-        env["PYTHONPATH"] = base_dir
-        
-        fetch_result = subprocess.run(
-            ["python", fetch_script], 
-            cwd=base_dir, 
-            capture_output=True, 
-            text=True,
-            env=env
+        # 直接 import 并在后台线程跑，避免接口超时
+        from refresh_futures_to_db import refresh_futures_to_db
+        t = threading.Thread(target=refresh_futures_to_db, daemon=True)
+        t.start()
+        return JSONResponse(
+            status_code=202,
+            content={"code": 0, "msg": "数据拉取已在后台启动，通常需要 1~3 分钟，完成后请点刷新查看最新行情"}
         )
-        if fetch_result.returncode != 0:
-            return JSONResponse(status_code=500, content={"code": 500, "msg": f"爬虫执行失败: {fetch_result.stderr}"})
-            
-        # 2. 执行入库程序将最新数据刷入数据库
-        seed_result = subprocess.run(
-            ["python", seed_script], 
-            cwd=base_dir, 
-            capture_output=True, 
-            text=True,
-            env=env
-        )
-        if seed_result.returncode != 0:
-            return JSONResponse(status_code=500, content={"code": 500, "msg": f"数据入库失败: {seed_result.stderr}"})
-            
-        return JSONResponse(status_code=200, content={"code": 0, "msg": "数据爬取及更新成功"})
-        
     except Exception as e:
         return JSONResponse(status_code=500, content={"code": 500, "msg": f"执行出错: {str(e)}"})
+
+@router.get("/fetch_progress")
+def get_fetch_progress():
+    """获取当前后台拉取的进度百分比"""
+    return JSONResponse(status_code=200, content={
+        "code": 0, 
+        "msg": "success", 
+        "data": FETCH_PROGRESS
+    })
 
 
 @router.get("/list")
